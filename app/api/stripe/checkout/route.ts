@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { STRIPE_PRICE_IDS, stripe } from "@/lib/stripe";
+import { getStripe, STRIPE_PRICE_IDS } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
@@ -9,6 +9,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const stripe = getStripe();
   const supabase = await createClient();
 
   const {

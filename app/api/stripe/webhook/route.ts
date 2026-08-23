@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/database";
 
 export async function POST(request: Request) {
+  const stripe = getStripe();
   const signature = request.headers.get("stripe-signature");
   const payload = await request.text();
 

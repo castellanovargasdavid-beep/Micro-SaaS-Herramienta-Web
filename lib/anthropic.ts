@@ -2,9 +2,22 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import type { AiSummary, BriefQuestion } from "@/types/database";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+let _anthropic: Anthropic | null = null;
+
+/**
+ * Instancia perezosa: si se creara a nivel de módulo, Next.js la
+ * inicializaría al importar las rutas API durante `next build`, y el SDK de
+ * Anthropic lanza una excepción cuando ANTHROPIC_API_KEY no está definido —
+ * eso rompía el build en plataformas donde las env vars aún no están
+ * configuradas. Al crearla dentro de una función, solo se instancia cuando
+ * una request real la necesita (runtime, no build time).
+ */
+function getAnthropicClient(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  }
+  return _anthropic;
+}
 
 export const CLAUDE_MODEL = "claude-opus-5";
 
@@ -58,7 +71,7 @@ export async function generateBriefSummary(
   questions: BriefQuestion[],
   answers: Record<string, string>,
 ): Promise<AiSummary> {
-  const message = await anthropic.messages.create({
+  const message = await getAnthropicClient().messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 1500,
     system: SUMMARY_SYSTEM_PROMPT,
