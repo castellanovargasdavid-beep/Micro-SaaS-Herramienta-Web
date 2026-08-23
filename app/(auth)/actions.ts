@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { APP_URL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
 
@@ -53,14 +54,13 @@ export async function signupAction(
   }
 
   const supabase = await createClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${appUrl}/auth/callback`,
+      emailRedirectTo: `${APP_URL}/auth/callback`,
     },
   });
 

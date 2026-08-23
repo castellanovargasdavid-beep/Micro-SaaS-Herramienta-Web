@@ -10,7 +10,7 @@ import { DeleteBriefButton } from "@/components/dashboard/delete-brief-button";
 import { SubmissionsList } from "@/components/dashboard/submissions-list";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { NICHE_LABELS } from "@/lib/constants";
+import { APP_URL, NICHE_LABELS } from "@/lib/constants";
 import { requireUser } from "@/lib/data/dashboard";
 
 interface PageProps {
@@ -38,8 +38,7 @@ export default async function BriefDetailPage({ params }: PageProps) {
     .eq("brief_id", brief.id)
     .order("created_at", { ascending: false });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const publicUrl = `${appUrl}/b/${brief.id}`;
+  const publicUrl = `${APP_URL}/b/${brief.id}`;
 
   return (
     <div className="mx-auto max-w-4xl">

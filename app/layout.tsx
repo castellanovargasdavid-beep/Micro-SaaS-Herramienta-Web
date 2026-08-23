@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
-import { APP_NAME } from "@/lib/constants";
+import { APP_NAME, APP_URL } from "@/lib/constants";
 
 import "./globals.css";
 
@@ -19,9 +19,7 @@ export const metadata: Metadata = {
   },
   description:
     "BriefFast transforma los requerimientos caóticos de tus clientes en briefs estructurados y ejecutables con IA. Ideal para freelancers, agencias boutique y creadores de contenido.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  ),
+  metadataBase: new URL(APP_URL),
   openGraph: {
     title: `${APP_NAME} — Briefs claros, en minutos`,
     description:

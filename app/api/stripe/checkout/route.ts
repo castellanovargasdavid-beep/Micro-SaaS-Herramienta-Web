@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { APP_URL } from "@/lib/constants";
 import { getStripe, STRIPE_PRICE_IDS } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,8 +33,6 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .single();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
   let customerId = profile?.stripe_customer_id ?? undefined;
 
   if (!customerId) {
@@ -60,8 +59,8 @@ export async function POST(request: Request) {
         quantity: 1,
       },
     ],
-    success_url: `${appUrl}/dashboard?checkout=success`,
-    cancel_url: `${appUrl}/dashboard?checkout=cancelled`,
+    success_url: `${APP_URL}/dashboard?checkout=success`,
+    cancel_url: `${APP_URL}/dashboard?checkout=cancelled`,
     client_reference_id: user.id,
     metadata: { supabase_user_id: user.id, plan: parsed.data.plan },
   });

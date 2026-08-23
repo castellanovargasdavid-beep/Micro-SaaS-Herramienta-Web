@@ -2,6 +2,10 @@ import type { BriefNiche, PlanType } from "@/types/database";
 
 export const APP_NAME = "BriefFast";
 
+// `||` (not `??`) on purpose: on some platforms an unset env var arrives as
+// an empty string rather than undefined, which `??` would not catch.
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 export const NICHE_LABELS: Record<BriefNiche, string> = {
   web_design: "Diseño Web",
   copywriting: "Copywriting",
