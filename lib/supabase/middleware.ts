@@ -4,6 +4,18 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // El middleware corre en (casi) todas las rutas. Si Supabase aún no está
+  // configurado (env vars ausentes o vacías, p.ej. un deploy nuevo antes de
+  // completarlas), @supabase/ssr lanza una excepción — eso tumbaría el sitio
+  // entero con un 500 en cada página. Preferimos degradar: dejar pasar la
+  // request sin verificar sesión en vez de romper todo el sitio.
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
