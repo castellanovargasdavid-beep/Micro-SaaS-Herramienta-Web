@@ -20,6 +20,38 @@ export const NICHE_ICONS: Record<BriefNiche, string> = {
   video: "Clapperboard",
 };
 
+/** Color de acento por nicho — le da variedad visual al grid de plantillas
+ * y al simulador en vez de que todo dependa del mismo tono índigo. */
+export const NICHE_ACCENT: Record<
+  BriefNiche,
+  { bg: string; text: string; ring: string; hoverText: string }
+> = {
+  web_design: {
+    bg: "bg-brand-violet/12",
+    text: "text-brand-violet",
+    ring: "group-hover:border-brand-violet/40",
+    hoverText: "group-hover:text-brand-violet",
+  },
+  copywriting: {
+    bg: "bg-brand-orange/12",
+    text: "text-brand-orange",
+    ring: "group-hover:border-brand-orange/40",
+    hoverText: "group-hover:text-brand-orange",
+  },
+  branding: {
+    bg: "bg-brand-pink/12",
+    text: "text-brand-pink",
+    ring: "group-hover:border-brand-pink/40",
+    hoverText: "group-hover:text-brand-pink",
+  },
+  video: {
+    bg: "bg-brand-teal/12",
+    text: "text-brand-teal",
+    ring: "group-hover:border-brand-teal/40",
+    hoverText: "group-hover:text-brand-teal",
+  },
+};
+
 export const PLAN_LABELS: Record<PlanType, string> = {
   free: "Free",
   pro: "Pro",
@@ -27,6 +59,62 @@ export const PLAN_LABELS: Record<PlanType, string> = {
 };
 
 export const FREE_PLAN_ACTIVE_BRIEFS_LIMIT = 2;
+
+export interface Testimonial {
+  name: string;
+  role: string;
+  quote: string;
+  avatarSeed: number;
+  accent: "violet" | "orange" | "pink" | "teal" | "blue" | "amber";
+}
+
+export const TESTIMONIALS: Testimonial[] = [
+  {
+    name: "Camila Ríos",
+    role: "Diseñadora web freelance",
+    quote:
+      "Antes perdía media hora por cliente tratando de entender qué querían. Ahora mando el link, esperan el brief y ya sé exactamente por dónde empezar.",
+    avatarSeed: 47,
+    accent: "violet",
+  },
+  {
+    name: "Diego Martín",
+    role: "Copywriter · Estudio DM",
+    quote:
+      "Mis clientes responden desde el celular sin drama y a mí me llega todo ya ordenado: tono, objetivo, deadline. Se siente muy profesional.",
+    avatarSeed: 12,
+    accent: "orange",
+  },
+  {
+    name: "Valentina Cruz",
+    role: "Agencia de branding boutique",
+    quote:
+      "El resumen que genera la IA es mejor que el que yo escribía a mano. Y el Lifetime Deal se pagó solo con el primer proyecto.",
+    avatarSeed: 65,
+    accent: "pink",
+  },
+  {
+    name: "Andrés Poveda",
+    role: "Editor de video / Reels",
+    quote:
+      "Uso la plantilla de video con cada cliente nuevo. Lo que más me gusta es que no tengo que perseguir a nadie por WhatsApp para que me responda.",
+    avatarSeed: 33,
+    accent: "teal",
+  },
+];
+
+export interface StatItem {
+  value: string;
+  label: string;
+  accent: "violet" | "orange" | "pink" | "teal";
+}
+
+export const STATS: StatItem[] = [
+  { value: "10s", label: "para previsualizar un brief", accent: "violet" },
+  { value: "4", label: "plantillas listas por nicho", accent: "orange" },
+  { value: "2 min", label: "promedio para crear un formulario", accent: "pink" },
+  { value: "100%", label: "mobile-first para tus clientes", accent: "teal" },
+];
 
 export const PRICING_PLANS = [
   {

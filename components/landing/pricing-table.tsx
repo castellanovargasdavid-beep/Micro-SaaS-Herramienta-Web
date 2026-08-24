@@ -19,7 +19,7 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
   return (
     <section id="precios" className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
       <div className="mx-auto max-w-2xl text-center">
-        <span className="text-sm font-semibold uppercase tracking-wide text-primary">
+        <span className="text-sm font-semibold uppercase tracking-wide text-brand-violet">
           Precios
         </span>
         <h2 className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
@@ -48,7 +48,7 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
               )}
             >
               {plan.highlighted && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-violet to-brand-pink px-3 py-1 text-xs font-semibold text-white shadow">
                   Más popular
                 </span>
               )}
