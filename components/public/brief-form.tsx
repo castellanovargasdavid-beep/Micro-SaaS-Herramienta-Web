@@ -2,9 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 
 import { submitBriefAction } from "@/app/b/[id]/actions";
+import {
+  AttachmentsStep,
+  type PendingAttachment,
+} from "@/components/public/attachments-step";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,17 +34,22 @@ type Step =
   | { kind: "intro" }
   | { kind: "contact" }
   | { kind: "question"; index: number }
+  | { kind: "followup"; forQuestionIndex: number; question: string }
+  | { kind: "attachments" }
   | { kind: "review" }
   | { kind: "done" };
 
 export function BriefForm({ brief }: { brief: BriefPublic }) {
   const questions = brief.questions;
-  const totalSteps = questions.length + 2; // contacto + preguntas + revisión
+  const totalSteps = questions.length + 3; // contacto + preguntas + adjuntos + revisión
 
   const [step, setStep] = useState<Step>({ kind: "intro" });
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [followupDraft, setFollowupDraft] = useState("");
+  const [checkingAnswer, setCheckingAnswer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,8 +57,10 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
     if (step.kind === "intro") return 0;
     if (step.kind === "contact") return 1 / totalSteps;
     if (step.kind === "question") return (step.index + 2) / totalSteps;
+    if (step.kind === "followup") return (step.forQuestionIndex + 2.5) / totalSteps;
+    if (step.kind === "attachments") return (questions.length + 2) / totalSteps;
     return 1;
-  }, [step, totalSteps]);
+  }, [step, totalSteps, questions.length]);
 
   function goToContact() {
     setStep({ kind: "contact" });
@@ -57,36 +75,91 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
     if (questions.length > 0) {
       setStep({ kind: "question", index: 0 });
     } else {
-      setStep({ kind: "review" });
+      setStep({ kind: "attachments" });
     }
   }
 
-  function goNextFromQuestion(index: number) {
+  function advancePastQuestion(index: number) {
+    if (index + 1 < questions.length) {
+      setStep({ kind: "question", index: index + 1 });
+    } else {
+      setStep({ kind: "attachments" });
+    }
+  }
+
+  async function goNextFromQuestion(index: number) {
     const q = questions[index];
-    if (q.required && !answers[q.id]?.trim()) {
+    const answer = answers[q.id]?.trim() ?? "";
+
+    if (q.required && !answer) {
       setError("Esta pregunta es obligatoria.");
       return;
     }
     setError(null);
-    if (index + 1 < questions.length) {
-      setStep({ kind: "question", index: index + 1 });
-    } else {
-      setStep({ kind: "review" });
+
+    // Preguntas dinámicas con IA: si la respuesta es muy vaga, la IA genera
+    // una repregunta concreta antes de avanzar, en vez de dejar pasar un
+    // "algo moderno" que no le sirve a nadie.
+    const canRefine =
+      (q.type === "text" || q.type === "textarea") && answer.length > 0;
+
+    if (canRefine) {
+      setCheckingAnswer(true);
+      try {
+        const res = await fetch("/api/refine-answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ questionLabel: q.label, answer }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isVague && data.followUpQuestion) {
+            setFollowupDraft("");
+            setCheckingAnswer(false);
+            setStep({
+              kind: "followup",
+              forQuestionIndex: index,
+              question: data.followUpQuestion,
+            });
+            return;
+          }
+        }
+      } catch {
+        // Si falla el chequeo, simplemente avanzamos sin repregunta.
+      }
+      setCheckingAnswer(false);
     }
+
+    advancePastQuestion(index);
+  }
+
+  function goNextFromFollowup(forQuestionIndex: number) {
+    const q = questions[forQuestionIndex];
+    if (followupDraft.trim()) {
+      setAnswers((prev) => ({
+        ...prev,
+        [q.id]: `${prev[q.id]?.trim() ?? ""}\n\nAclaración: ${followupDraft.trim()}`,
+      }));
+    }
+    advancePastQuestion(forQuestionIndex);
   }
 
   function goBack() {
     setError(null);
-    if (step.kind === "question" && step.index > 0) {
-      setStep({ kind: "question", index: step.index - 1 });
-    } else if (step.kind === "question" && step.index === 0) {
-      setStep({ kind: "contact" });
-    } else if (step.kind === "review") {
+    if (step.kind === "followup") {
+      setStep({ kind: "question", index: step.forQuestionIndex });
+    } else if (step.kind === "attachments") {
       setStep(
         questions.length > 0
           ? { kind: "question", index: questions.length - 1 }
           : { kind: "contact" },
       );
+    } else if (step.kind === "question" && step.index > 0) {
+      setStep({ kind: "question", index: step.index - 1 });
+    } else if (step.kind === "question" && step.index === 0) {
+      setStep({ kind: "contact" });
+    } else if (step.kind === "review") {
+      setStep({ kind: "attachments" });
     } else if (step.kind === "contact") {
       setStep({ kind: "intro" });
     }
@@ -99,6 +172,7 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
       clientName,
       clientEmail,
       answers,
+      attachments,
     });
     setSubmitting(false);
 
@@ -215,7 +289,60 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
               />
             </div>
             {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
-            <StepNav onBack={goBack} onNext={() => goNextFromQuestion(step.index)} />
+            <StepNav
+              onBack={goBack}
+              onNext={() => goNextFromQuestion(step.index)}
+              loading={checkingAnswer}
+            />
+          </StepShell>
+        )}
+
+        {step.kind === "followup" && (
+          <StepShell key="followup">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+              <Wand2 className="size-3.5" />
+              Una pregunta rápida para entenderte mejor
+            </span>
+            <h2 className="mt-1 text-xl font-semibold text-balance">
+              {step.question}
+            </h2>
+            <div className="mt-5">
+              <Textarea
+                value={followupDraft}
+                onChange={(e) => setFollowupDraft(e.target.value)}
+                rows={4}
+                autoFocus
+                placeholder="Cuéntanos un poco más..."
+              />
+            </div>
+            <div className="mt-6 flex items-center gap-3">
+              <Button type="button" variant="outline" onClick={goBack}>
+                <ArrowLeft className="size-4" />
+                Atrás
+              </Button>
+              <Button
+                type="button"
+                variant="gradient"
+                className="flex-1"
+                onClick={() => goNextFromFollowup(step.forQuestionIndex)}
+              >
+                Continuar
+                <ArrowRight className="size-4" />
+              </Button>
+            </div>
+          </StepShell>
+        )}
+
+        {step.kind === "attachments" && (
+          <StepShell key="attachments">
+            <h2 className="text-xl font-semibold">¿Algo más que compartir?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Una nota de voz o un archivo pueden ayudar mucho — es opcional.
+            </p>
+            <div className="mt-5">
+              <AttachmentsStep value={attachments} onChange={setAttachments} />
+            </div>
+            <StepNav onBack={goBack} onNext={() => setStep({ kind: "review" })} />
           </StepShell>
         )}
 
@@ -244,6 +371,16 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
                   </dd>
                 </div>
               ))}
+              {attachments.length > 0 && (
+                <div className="pt-3">
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Adjuntos
+                  </dt>
+                  <dd className="text-sm">
+                    {attachments.length} archivo(s) adjunto(s)
+                  </dd>
+                </div>
+              )}
             </dl>
             {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
             <div className="mt-6 flex items-center gap-3">
@@ -302,16 +439,31 @@ function StepShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StepNav({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+function StepNav({
+  onBack,
+  onNext,
+  loading,
+}: {
+  onBack: () => void;
+  onNext: () => void;
+  loading?: boolean;
+}) {
   return (
     <div className="mt-6 flex items-center gap-3">
-      <Button type="button" variant="outline" onClick={onBack}>
+      <Button type="button" variant="outline" onClick={onBack} disabled={loading}>
         <ArrowLeft className="size-4" />
         Atrás
       </Button>
-      <Button type="button" variant="gradient" className="flex-1" onClick={onNext}>
+      <Button
+        type="button"
+        variant="gradient"
+        className="flex-1"
+        onClick={onNext}
+        disabled={loading}
+      >
+        {loading ? <Loader2 className="size-4 animate-spin" /> : null}
         Continuar
-        <ArrowRight className="size-4" />
+        {!loading && <ArrowRight className="size-4" />}
       </Button>
     </div>
   );

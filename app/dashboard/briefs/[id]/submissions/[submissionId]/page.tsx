@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { SubmissionSummary } from "@/components/dashboard/submission-summary";
 import { requireUser } from "@/lib/data/dashboard";
+import { getAttachmentSignedUrl } from "@/lib/supabase/storage";
 
 interface PageProps {
   params: Promise<{ id: string; submissionId: string }>;
@@ -33,6 +34,19 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
     .single();
 
   if (!submission) notFound();
+
+  const { data: attachments } = await supabase
+    .from("submission_attachments")
+    .select("*")
+    .eq("submission_id", submission.id)
+    .order("created_at", { ascending: true });
+
+  const attachmentsWithUrls = await Promise.all(
+    (attachments ?? []).map(async (a) => ({
+      ...a,
+      url: await getAttachmentSignedUrl(a.storage_path),
+    })),
+  );
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -65,6 +79,7 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
           answers={submission.answers}
           initialSummary={submission.ai_summary}
           initialMarkdown={submission.ai_summary_markdown}
+          attachments={attachmentsWithUrls}
         />
       </div>
     </div>

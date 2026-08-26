@@ -10,6 +10,8 @@ export type SubscriptionStatus =
   | "incomplete"
   | "incomplete_expired";
 export type SubscriptionPlan = "pro_monthly" | "lifetime";
+export type AttachmentKind = "audio" | "pdf" | "image" | "file";
+export type ProposalStatus = "draft" | "sent" | "accepted" | "declined";
 
 export type QuestionType =
   | "text"
@@ -40,6 +42,11 @@ export interface AiSummary {
   executive_summary: string;
 }
 
+export interface ProposalScopeItem {
+  label: string;
+  description: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -54,6 +61,8 @@ export interface Database {
           brand_logo_url: string | null;
           plan: PlanType;
           stripe_customer_id: string | null;
+          notion_token: string | null;
+          notion_database_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -178,6 +187,84 @@ export interface Database {
           },
         ];
       };
+      submission_attachments: {
+        Row: {
+          id: string;
+          submission_id: string;
+          kind: AttachmentKind;
+          storage_path: string;
+          original_filename: string | null;
+          transcript: string | null;
+          transcribed_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<
+          Database["public"]["Tables"]["submission_attachments"]["Row"]
+        > & { submission_id: string; kind: AttachmentKind; storage_path: string };
+        Update: Partial<
+          Database["public"]["Tables"]["submission_attachments"]["Row"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "submission_attachments_submission_id_fkey";
+            columns: ["submission_id"];
+            isOneToOne: false;
+            referencedRelation: "submissions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      proposals: {
+        Row: {
+          id: string;
+          user_id: string;
+          brief_id: string | null;
+          submission_id: string | null;
+          title: string;
+          client_name: string | null;
+          client_email: string | null;
+          intro_message: string | null;
+          scope_items: ProposalScopeItem[];
+          price: number | null;
+          currency: string;
+          valid_until: string | null;
+          status: ProposalStatus;
+          signer_name: string | null;
+          signature_data: string | null;
+          signed_at: string | null;
+          signer_ip: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["proposals"]["Row"]> & {
+          user_id: string;
+          title: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["proposals"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "proposals_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "proposals_brief_id_fkey";
+            columns: ["brief_id"];
+            isOneToOne: false;
+            referencedRelation: "briefs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "proposals_submission_id_fkey";
+            columns: ["submission_id"];
+            isOneToOne: false;
+            referencedRelation: "submissions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       brief_public: {
@@ -194,6 +281,22 @@ export interface Database {
         };
         Relationships: [];
       };
+      proposal_public: {
+        Row: {
+          id: string;
+          title: string;
+          client_name: string | null;
+          intro_message: string | null;
+          scope_items: ProposalScopeItem[];
+          price: number | null;
+          currency: string;
+          valid_until: string | null;
+          status: ProposalStatus;
+          signer_name: string | null;
+          signed_at: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: Record<string, never>;
   };
@@ -204,4 +307,8 @@ export type BriefTemplate = Database["public"]["Tables"]["brief_templates"]["Row
 export type Brief = Database["public"]["Tables"]["briefs"]["Row"];
 export type Submission = Database["public"]["Tables"]["submissions"]["Row"];
 export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
+export type SubmissionAttachment =
+  Database["public"]["Tables"]["submission_attachments"]["Row"];
+export type Proposal = Database["public"]["Tables"]["proposals"]["Row"];
 export type BriefPublic = Database["public"]["Views"]["brief_public"]["Row"];
+export type ProposalPublic = Database["public"]["Views"]["proposal_public"]["Row"];

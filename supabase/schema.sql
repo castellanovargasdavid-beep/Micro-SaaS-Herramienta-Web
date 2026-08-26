@@ -441,3 +441,165 @@ on conflict (slug) do update set
   sort_order = excluded.sort_order,
   questions = excluded.questions,
   is_active = true;
+
+-- ============================================================================
+-- ENTRADA MULTIMODAL: adjuntos de audio/PDF por respuesta + credenciales de
+-- integraciones externas. Ejecuta este bloque también si ya corriste el
+-- esquema anteriormente — es idempotente.
+-- ============================================================================
+
+do $$ begin
+  create type attachment_kind as enum ('audio', 'pdf', 'image', 'file');
+exception when duplicate_object then null; end $$;
+
+alter table public.profiles
+  add column if not exists notion_token text,
+  add column if not exists notion_database_id text;
+
+create table if not exists public.submission_attachments (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid not null references public.submissions (id) on delete cascade,
+  kind attachment_kind not null,
+  storage_path text not null,
+  original_filename text,
+  transcript text,
+  transcribed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.submission_attachments is 'Notas de voz y archivos (PDF/imágenes) que el cliente adjunta al responder un brief. El audio se transcribe (Whisper) y el texto queda en transcript para que la IA lo use al generar el resumen.';
+
+create index if not exists idx_submission_attachments_submission_id
+  on public.submission_attachments (submission_id);
+
+alter table public.submission_attachments enable row level security;
+
+drop policy if exists "attachments_public_insert" on public.submission_attachments;
+create policy "attachments_public_insert"
+  on public.submission_attachments for insert
+  to anon, authenticated
+  with check (
+    exists (select 1 from public.submissions s where s.id = submission_id)
+  );
+
+drop policy if exists "attachments_owner_select" on public.submission_attachments;
+create policy "attachments_owner_select"
+  on public.submission_attachments for select
+  using (
+    exists (
+      select 1 from public.submissions s
+      join public.briefs b on b.id = s.brief_id
+      where s.id = submission_attachments.submission_id and b.user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "attachments_owner_delete" on public.submission_attachments;
+create policy "attachments_owner_delete"
+  on public.submission_attachments for delete
+  using (
+    exists (
+      select 1 from public.submissions s
+      join public.briefs b on b.id = s.brief_id
+      where s.id = submission_attachments.submission_id and b.user_id = auth.uid()
+    )
+  );
+
+-- Bucket privado para los adjuntos. El cliente final puede subir (anon insert)
+-- pero nadie puede leer directo por URL pública: el dashboard genera signed
+-- URLs de corta duración desde el servidor tras verificar que el usuario es
+-- dueño del brief (ver lib/supabase/storage.ts).
+insert into storage.buckets (id, name, public)
+values ('attachments', 'attachments', false)
+on conflict (id) do nothing;
+
+drop policy if exists "attachments_bucket_public_upload" on storage.objects;
+create policy "attachments_bucket_public_upload"
+  on storage.objects for insert
+  to anon, authenticated
+  with check (bucket_id = 'attachments');
+
+-- ============================================================================
+-- TABLA: proposals
+-- Propuesta comercial (alcance + precio) generada a partir de un brief, con
+-- firma electrónica simple (nombre + trazo) capturada en la página pública.
+-- ============================================================================
+
+do $$ begin
+  create type proposal_status as enum ('draft', 'sent', 'accepted', 'declined');
+exception when duplicate_object then null; end $$;
+
+create table if not exists public.proposals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  brief_id uuid references public.briefs (id) on delete set null,
+  submission_id uuid references public.submissions (id) on delete set null,
+  title text not null,
+  client_name text,
+  client_email text,
+  intro_message text,
+  scope_items jsonb not null default '[]'::jsonb,
+  price numeric(12, 2),
+  currency text not null default 'USD',
+  valid_until date,
+  status proposal_status not null default 'draft',
+  signer_name text,
+  signature_data text,
+  signed_at timestamptz,
+  signer_ip text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.proposals is 'scope_items: [{"label": string, "description": string}]. signature_data es un PNG en base64 capturado en un <canvas> — firma electrónica simple, no una firma digital certificada.';
+
+create index if not exists idx_proposals_user_id on public.proposals (user_id);
+
+drop trigger if exists trg_proposals_updated_at on public.proposals;
+create trigger trg_proposals_updated_at
+  before update on public.proposals
+  for each row execute function public.set_updated_at();
+
+alter table public.proposals enable row level security;
+
+drop policy if exists "proposals_owner_select" on public.proposals;
+create policy "proposals_owner_select"
+  on public.proposals for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "proposals_owner_insert" on public.proposals;
+create policy "proposals_owner_insert"
+  on public.proposals for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "proposals_owner_update" on public.proposals;
+create policy "proposals_owner_update"
+  on public.proposals for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "proposals_owner_delete" on public.proposals;
+create policy "proposals_owner_delete"
+  on public.proposals for delete
+  using (auth.uid() = user_id);
+
+-- Vista pública para la página de firma /p/[id]: solo visible cuando el
+-- freelancer ya la envió (o ya fue firmada), nunca en estado 'draft'.
+-- La firma en sí se escribe desde un server action con la service_role key
+-- (ver app/p/[id]/actions.ts), no vía policy de UPDATE anónima.
+create or replace view public.proposal_public as
+select
+  id,
+  title,
+  client_name,
+  intro_message,
+  scope_items,
+  price,
+  currency,
+  valid_until,
+  status,
+  signer_name,
+  signed_at
+from public.proposals
+where status in ('sent', 'accepted');
+
+grant select on public.proposal_public to anon, authenticated;

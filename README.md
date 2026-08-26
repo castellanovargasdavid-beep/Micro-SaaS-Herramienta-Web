@@ -2,16 +2,38 @@
 
 Herramienta web para freelancers, agencias boutique y creadores de contenido
 que transforma requerimientos caóticos de clientes en briefs estructurados y
-ejecutables mediante IA (Claude).
+ejecutables mediante IA (Claude) — no solo genera texto, funciona como un
+asistente de onboarding de clientes: acepta texto, notas de voz y PDFs,
+repregunta en tiempo real cuando una respuesta es vaga, y termina en una
+propuesta comercial firmable o una página de Notion.
+
+## Diferenciales
+
+- **Entrada multimodal**: el cliente puede grabar una nota de voz (se
+  transcribe automáticamente con Whisper) o adjuntar PDFs/imágenes; Claude lee
+  el PDF directamente (no solo su nombre de archivo).
+- **Preguntas dinámicas con IA**: si una respuesta es vaga ("algo moderno"),
+  el formulario repregunta en el momento con una pregunta concreta generada
+  por Claude, antes de dejar avanzar al cliente.
+- **Propuesta comercial firmable**: desde cualquier respuesta procesada se
+  genera una propuesta con alcance y precio; el cliente la firma en una
+  página pública (firma a mano en un `<canvas>`) y ambas partes obtienen un PDF.
+- **Exportar a Notion**: con un token de integración interna (sin OAuth), el
+  resumen ejecutivo se envía como una página nueva a la base de datos de
+  Notion del usuario.
 
 ## Stack
 
 - **Next.js 16** (App Router, Server Actions, TypeScript, Turbopack)
 - **Tailwind CSS v4** + componentes propios estilo shadcn/ui (Radix UI + CVA) + Framer Motion
-- **Supabase** (PostgreSQL + Auth + Row Level Security)
+- **Supabase** (PostgreSQL + Auth + Row Level Security + Storage)
 - **Stripe** (Checkout + Webhooks) — planes Pro mensual y Lifetime Deal
-- **Anthropic Claude API** (`@anthropic-ai/sdk`) — generación del resumen ejecutivo
-- **@react-pdf/renderer** — exportación de briefs a PDF
+- **Anthropic Claude API** (`@anthropic-ai/sdk`) — resumen ejecutivo, preguntas
+  dinámicas y lectura nativa de PDFs adjuntos
+- **OpenAI Whisper** (`openai`) — transcripción de notas de voz (Claude no
+  transcribe audio de forma nativa)
+- **Notion API** (`@notionhq/client`) — exportación del resumen a Notion
+- **@react-pdf/renderer** — exportación de briefs y propuestas a PDF
 
 ## Estructura del proyecto
 
@@ -22,21 +44,25 @@ app/
   auth/callback                Callback de confirmación de email
   dashboard/                   Panel del usuario (protegido)
     briefs/[id]                Detalle de un brief: bandeja + configuración
-    briefs/[id]/submissions/.. Detalle de una respuesta + resumen IA
-    settings/                  Perfil, marca y facturación
-  b/[id]                       Formulario público para el cliente final
+    briefs/[id]/submissions/.. Detalle de una respuesta + resumen IA + adjuntos
+    proposals/, proposals/[id], proposals/new   Propuestas comerciales
+    settings/                  Perfil, marca, integraciones (Notion) y facturación
+  b/[id]                       Formulario público para el cliente final (multimodal)
+  p/[id]                       Página pública de firma de propuestas
   api/
     generate-summary/          Genera el resumen ejecutivo con Claude
-    stripe/checkout/           Crea la sesión de Stripe Checkout
-    stripe/webhook/            Sincroniza el estado de la suscripción
-    submissions/[id]/export-pdf/  Genera el PDF del brief
+    refine-answer/              Detecta respuestas vagas y genera repreguntas
+    stripe/checkout/, stripe/webhook/           Pagos y suscripciones
+    submissions/[id]/export-pdf/, export-notion/  Exportar un brief
+    proposals/[id]/export-pdf/  PDF de la propuesta (borrador o firmada)
 components/
-  landing/, auth/, dashboard/, public/, pdf/, ui/
+  landing/, auth/, dashboard/, public/, proposals/, pdf/, ui/
 lib/
-  supabase/ (client, server, admin, middleware)
-  anthropic.ts, stripe.ts, constants.ts, demo-summary.ts, ltd-seats.ts
+  supabase/ (client, server, admin, middleware, storage)
+  anthropic.ts, openai.ts, notion.ts, stripe.ts, constants.ts,
+  demo-summary.ts, ltd-seats.ts
 supabase/
-  schema.sql                   Esquema completo: tablas, RLS, triggers, seed
+  schema.sql                   Esquema completo: tablas, RLS, triggers, storage, seed
 types/database.ts              Tipos TypeScript del esquema
 ```
 
@@ -64,9 +90,16 @@ Completa `.env.local` con tus credenciales reales (ver siguientes secciones).
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (mantenla secreta)
-3. Ve a **SQL Editor**, pega el contenido de [`supabase/schema.sql`](./supabase/schema.sql)
-   y ejecútalo. Esto crea:
+3. Ve a **SQL Editor**, pega el contenido completo de
+   [`supabase/schema.sql`](./supabase/schema.sql) y ejecútalo (es idempotente:
+   si ya lo habías corrido antes, puedes volver a pegar el archivo completo
+   sin problema, incluida la sección multimodal/propuestas/Notion agregada al
+   final). Esto crea:
    - Tablas `profiles`, `brief_templates`, `briefs`, `submissions`, `subscriptions`
+   - `submission_attachments` (notas de voz/PDFs) + el bucket privado de
+     Storage `attachments` con su política de subida
+   - `proposals` (propuestas comerciales con firma electrónica simple)
+   - Columnas `notion_token` / `notion_database_id` en `profiles`
    - Políticas RLS estrictas (cada usuario solo ve sus propios datos)
    - El trigger `handle_new_user` que crea automáticamente un `profile` al registrarse
    - El trigger `enforce_free_plan_brief_limit` (máx. 2 briefs activos/mes en Free)
@@ -89,7 +122,31 @@ El modelo usado es `claude-opus-5` (ver `lib/anthropic.ts`).
 > y **no** consume la API de Anthropic, para no exponer costo/abuso a tráfico
 > anónimo. El flujo real (formulario público → dashboard) sí llama a Claude.
 
-## 5. Configurar Stripe
+## 5. Configurar OpenAI (transcripción de notas de voz)
+
+1. Genera una API key en [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+2. Colócala en `OPENAI_API_KEY`.
+
+Se usa únicamente el endpoint de transcripción (Whisper) cuando un cliente
+adjunta una nota de voz en el formulario público. Si no configuras esta
+variable, el resto de la app sigue funcionando con normalidad — solo la
+transcripción de audio quedará deshabilitada (el adjunto de audio se guarda
+igual y puedes escucharlo desde el dashboard).
+
+## 6. Notion (opcional, por usuario)
+
+A diferencia de las demás integraciones, esta no lleva variables de entorno
+globales: cada freelancer conecta **su propia** cuenta de Notion desde
+**Configuración** dentro de la app:
+
+1. Crea una integración interna en [notion.so/my-integrations](https://www.notion.so/my-integrations)
+   y copia su secreto (`ntn_...`).
+2. En Notion, abre la base de datos donde quieres recibir los briefs → botón
+   **"..."** → **Connections** → agrega la integración que acabas de crear.
+3. Copia el ID de la base de datos (los 32 caracteres en su URL).
+4. Pega ambos valores en Configuración → Integración con Notion, dentro de BriefFast.
+
+## 7. Configurar Stripe
 
 1. En el [Dashboard de Stripe](https://dashboard.stripe.com/test/apikeys), copia la
    clave secreta de test → `STRIPE_SECRET_KEY`.
@@ -106,7 +163,7 @@ El modelo usado es `claude-opus-5` (ver `lib/anthropic.ts`).
      `https://tu-dominio.com/api/stripe/webhook` y suscribe los eventos:
      `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.
 
-## 6. Ejecutar en desarrollo
+## 8. Ejecutar en desarrollo
 
 ```bash
 pnpm dev
@@ -114,14 +171,14 @@ pnpm dev
 
 Abre [http://localhost:3000](http://localhost:3000).
 
-## 7. Build de producción
+## 9. Build de producción
 
 ```bash
 pnpm build
 pnpm start
 ```
 
-## 8. Despliegue (Vercel)
+## 10. Despliegue (Vercel)
 
 1. Importa el repositorio en [vercel.com/new](https://vercel.com/new).
 2. Agrega todas las variables de `.env.example` en **Project Settings → Environment Variables**
@@ -149,3 +206,25 @@ pnpm start
 - **Stripe**: `app/api/stripe/webhook/route.ts` es la única fuente de verdad
   para actualizar `profiles.plan` y `subscriptions`; usa la `service_role` key
   para escribir sin pasar por RLS.
+- **Adjuntos multimodales**: el bucket `attachments` es privado. El cliente
+  final sube directo desde el navegador (policy de INSERT abierta al bucket),
+  pero nadie puede leer los objetos sin pasar por el servidor: el dashboard
+  genera signed URLs de corta duración (`lib/supabase/storage.ts`) solo tras
+  verificar la propiedad del brief. Las notas de voz se transcriben con
+  Whisper y los PDFs se envían completos a Claude como `document` block —
+  ambos se incorporan al resumen ejecutivo, no solo se listan como archivos.
+- **Preguntas dinámicas**: `app/api/refine-answer/route.ts` es deliberadamente
+  público (el cliente final no tiene sesión); por eso valida longitudes
+  máximas en el body en vez de solo confiar en autenticación, para acotar el
+  costo de abuso.
+- **Propuestas y firma**: firmar es una transición de estado hecha por un
+  visitante anónimo, así que en vez de una policy de UPDATE compleja en RLS,
+  `app/p/[id]/actions.ts` valida en código (`status === 'sent'`) y escribe con
+  la `service_role` key. Una propuesta `accepted` es descargable en PDF sin
+  sesión (es el comprobante de ambas partes); en cualquier otro estado solo el
+  dueño autenticado puede verla.
+- **Notion**: integración por token estático (sin OAuth) guardado en
+  `profiles.notion_token` — cada usuario crea su propia "internal integration"
+  en Notion y la conecta desde Configuración. `lib/notion.ts` detecta
+  automáticamente la propiedad de tipo "Título" de la base de datos destino,
+  así que funciona con cualquier esquema de base de datos que el usuario ya tenga.

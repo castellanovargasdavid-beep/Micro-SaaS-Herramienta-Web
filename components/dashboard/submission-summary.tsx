@@ -1,14 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   CalendarClock,
   CheckCircle2,
   Clipboard,
   Download,
   FileDown,
+  FileSignature,
+  FileText,
   Image as ImageIcon,
   Loader2,
+  Mic,
+  Notebook,
+  Paperclip,
   RefreshCw,
   Sparkles,
   Target,
@@ -18,7 +24,14 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { AiSummary, BriefQuestion } from "@/types/database";
+import type { AiSummary, AttachmentKind, BriefQuestion, SubmissionAttachment } from "@/types/database";
+
+const ATTACHMENT_ICONS: Record<AttachmentKind, typeof Mic> = {
+  audio: Mic,
+  pdf: FileText,
+  image: ImageIcon,
+  file: Paperclip,
+};
 
 interface Props {
   submissionId: string;
@@ -28,6 +41,7 @@ interface Props {
   answers: Record<string, string>;
   initialSummary: AiSummary | null;
   initialMarkdown: string | null;
+  attachments: (SubmissionAttachment & { url: string | null })[];
 }
 
 export function SubmissionSummary({
@@ -38,10 +52,12 @@ export function SubmissionSummary({
   answers,
   initialSummary,
   initialMarkdown,
+  attachments,
 }: Props) {
   const [summary, setSummary] = useState(initialSummary);
   const [markdown, setMarkdown] = useState(initialMarkdown);
   const [generating, setGenerating] = useState(false);
+  const [exportingNotion, setExportingNotion] = useState(false);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -67,6 +83,23 @@ export function SubmissionSummary({
     if (!markdown) return;
     await navigator.clipboard.writeText(markdown);
     toast.success("Texto copiado al portapapeles");
+  }
+
+  async function handleExportNotion() {
+    setExportingNotion(true);
+    try {
+      const res = await fetch(`/api/submissions/${submissionId}/export-notion`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "No se pudo exportar a Notion");
+      window.open(data.url, "_blank", "noreferrer");
+      toast.success("Exportado a Notion");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo exportar a Notion");
+    } finally {
+      setExportingNotion(false);
+    }
   }
 
   function handleDownloadMarkdown() {
@@ -160,6 +193,25 @@ export function SubmissionSummary({
                     Descargar PDF
                   </a>
                 </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/dashboard/proposals/new?submissionId=${submissionId}`}>
+                    <FileSignature className="size-3.5" />
+                    Crear propuesta
+                  </Link>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportNotion}
+                  disabled={exportingNotion}
+                >
+                  {exportingNotion ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Notebook className="size-3.5" />
+                  )}
+                  Exportar a Notion
+                </Button>
               </div>
             </div>
           ) : (
@@ -191,6 +243,46 @@ export function SubmissionSummary({
           ))}
         </CardContent>
       </Card>
+
+      {attachments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Adjuntos del cliente ({attachments.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pb-6">
+            {attachments.map((a) => {
+              const Icon = ATTACHMENT_ICONS[a.kind];
+              return (
+                <div key={a.id} className="rounded-lg border border-border p-3.5">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Icon className="size-4 text-muted-foreground" />
+                    {a.original_filename ?? "Adjunto"}
+                  </div>
+                  {a.kind === "audio" && a.url && (
+                    <audio controls src={a.url} className="mt-2 w-full" />
+                  )}
+                  {a.kind === "audio" && a.transcript && (
+                    <p className="mt-2 rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Transcripción: </span>
+                      {a.transcript}
+                    </p>
+                  )}
+                  {a.kind !== "audio" && a.url && (
+                    <Button size="sm" variant="outline" className="mt-2" asChild>
+                      <a href={a.url} target="_blank" rel="noreferrer">
+                        <Download className="size-3.5" />
+                        Ver archivo
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

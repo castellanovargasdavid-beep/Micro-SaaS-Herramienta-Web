@@ -53,3 +53,41 @@ export async function updateProfileAction(
   revalidatePath("/dashboard/settings");
   return { success: true };
 }
+
+const notionSchema = z.object({
+  notionToken: z.string().optional(),
+  notionDatabaseId: z.string().optional(),
+});
+
+export async function updateNotionSettingsAction(
+  _prevState: UpdateProfileState,
+  formData: FormData,
+): Promise<UpdateProfileState> {
+  const parsed = notionSchema.safeParse({
+    notionToken: formData.get("notionToken"),
+    notionDatabaseId: formData.get("notionDatabaseId"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Datos inválidos" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      notion_token: parsed.data.notionToken || null,
+      notion_database_id: parsed.data.notionDatabaseId || null,
+    })
+    .eq("id", user.id);
+
+  if (error) return { error: "No se pudo guardar. Intenta de nuevo." };
+
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}

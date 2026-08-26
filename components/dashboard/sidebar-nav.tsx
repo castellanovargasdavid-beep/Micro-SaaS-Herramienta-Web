@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LayoutDashboard, Settings, Sparkles } from "lucide-react";
+import { FileSignature, FileText, LayoutDashboard, Settings, Sparkles } from "lucide-react";
 
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Mis briefs", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/proposals", label: "Propuestas", icon: FileSignature },
   { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ];
 
