@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { StatsSection } from "@/components/landing/stats-section";
 import { TemplatesGrid } from "@/components/landing/templates-grid";
 import { Testimonials } from "@/components/landing/testimonials";
+import { VoiceToProposalDemo } from "@/components/landing/voice-to-proposal-demo";
 import { getLtdSeatsRemaining } from "@/lib/ltd-seats";
 
 export default async function LandingPage() {
@@ -19,6 +20,7 @@ export default async function LandingPage() {
         <Hero />
         <StatsSection />
         <BeforeAfter />
+        <VoiceToProposalDemo />
         <TemplatesGrid />
         <Testimonials />
         <PricingTable ltdSeatsRemaining={ltdSeatsRemaining} />
