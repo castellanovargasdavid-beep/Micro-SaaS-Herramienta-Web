@@ -12,6 +12,7 @@ export type SubscriptionStatus =
 export type SubscriptionPlan = "pro_monthly" | "lifetime";
 export type AttachmentKind = "audio" | "pdf" | "image" | "file";
 export type ProposalStatus = "draft" | "sent" | "accepted" | "declined";
+export type RatePricingType = "fixed" | "hourly" | "monthly";
 
 export type QuestionType =
   | "text"
@@ -45,6 +46,17 @@ export interface AiSummary {
 export interface ProposalScopeItem {
   label: string;
   description: string;
+  /** Campos opcionales de presupuesto: ausentes en propuestas creadas antes
+   * del editor de presupuesto, o en líneas agregadas manualmente sin precio. */
+  pricingType?: RatePricingType;
+  /** Horas si pricingType es "hourly"; 1 en los demás casos. */
+  quantity?: number;
+  unitPrice?: number;
+  subtotal?: number;
+  /** true si la IA no encontró un ítem del rate card que encajara bien. */
+  needsReview?: boolean;
+  /** id del rate_card_item usado para esta línea, si vino de un match. */
+  matchedRateItemId?: string | null;
 }
 
 export interface Database {
@@ -63,6 +75,8 @@ export interface Database {
           stripe_customer_id: string | null;
           notion_token: string | null;
           notion_database_id: string | null;
+          default_currency: string;
+          tax_percentage: number;
           created_at: string;
           updated_at: string;
         };
@@ -233,6 +247,9 @@ export interface Database {
           signature_data: string | null;
           signed_at: string | null;
           signer_ip: string | null;
+          subtotal: number | null;
+          discount_amount: number;
+          tax_percentage: number;
           created_at: string;
           updated_at: string;
         };
@@ -261,6 +278,32 @@ export interface Database {
             columns: ["submission_id"];
             isOneToOne: false;
             referencedRelation: "submissions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      rate_card_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          pricing_type: RatePricingType;
+          amount: number;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["rate_card_items"]["Row"]> & {
+          user_id: string;
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["rate_card_items"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "rate_card_items_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -294,6 +337,9 @@ export interface Database {
           status: ProposalStatus;
           signer_name: string | null;
           signed_at: string | null;
+          subtotal: number | null;
+          discount_amount: number;
+          tax_percentage: number;
         };
         Relationships: [];
       };
@@ -310,5 +356,6 @@ export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 export type SubmissionAttachment =
   Database["public"]["Tables"]["submission_attachments"]["Row"];
 export type Proposal = Database["public"]["Tables"]["proposals"]["Row"];
+export type RateCardItem = Database["public"]["Tables"]["rate_card_items"]["Row"];
 export type BriefPublic = Database["public"]["Views"]["brief_public"]["Row"];
 export type ProposalPublic = Database["public"]["Views"]["proposal_public"]["Row"];

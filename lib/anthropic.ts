@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-import type { AiSummary, BriefQuestion } from "@/types/database";
+import type {
+  AiSummary,
+  BriefQuestion,
+  ProposalScopeItem,
+  RateCardItem,
+} from "@/types/database";
 
 let _anthropic: Anthropic | null = null;
 
@@ -224,5 +229,92 @@ export async function refineAnswerIfVague(
     return JSON.parse(jsonMatch[0]) as RefineAnswerResult;
   } catch {
     return { isVague: false, followUpQuestion: null };
+  }
+}
+
+const BUDGET_SYSTEM_PROMPT = `Eres un asistente que arma presupuestos para freelancers y agencias
+boutique. Se te da una lista de entregables detectados en el brief de un cliente y el catálogo de
+tarifas propio del freelancer (sus precios reales, no inventes tarifas de mercado). Tu trabajo es cruzar
+cada entregable con el ítem del catálogo que mejor corresponda.
+
+Reglas:
+- Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
+- Si un entregable corresponde claramente a un ítem del catálogo, usa exactamente su "id", su
+  pricing_type y su amount como unitPrice. needsReview debe ser false.
+- Si es de tipo "hourly", estima horas razonables ("quantity") según la complejidad descrita del
+  entregable — nunca inventes un precio distinto al amount por hora del catálogo.
+- Si NO hay ningún ítem del catálogo que corresponda razonablemente, deja matchedRateItemId en null,
+  sugiere pricingType "fixed", una cantidad de 1, un unitPrice estimado prudente en la moneda indicada
+  (nunca $0), y marca needsReview como true — el freelancer lo revisará antes de enviar.
+- No agregues entregables que el cliente no pidió. No fusiones varios entregables en una sola línea
+  salvo que ya vinieran así en la lista.
+
+El JSON debe tener exactamente esta forma:
+{ "items": [
+  { "label": string, "matchedRateItemId": string | null, "pricingType": "fixed" | "hourly" | "monthly",
+    "quantity": number, "unitPrice": number, "needsReview": boolean }
+] }`;
+
+export interface SuggestedBudgetItem {
+  label: string;
+  matchedRateItemId: string | null;
+  pricingType: ProposalScopeItem["pricingType"];
+  quantity: number;
+  unitPrice: number;
+  needsReview: boolean;
+}
+
+/**
+ * Cruza los entregables de un brief con el catálogo de tarifas del usuario
+ * para armar un presupuesto sugerido. Si el usuario no tiene catálogo
+ * (rateCardItems vacío), todas las líneas quedan marcadas needsReview=true
+ * con un precio estimado prudente, para que el freelancer las complete.
+ */
+export async function suggestProposalBudget(
+  deliverables: string[],
+  rateCardItems: RateCardItem[],
+  currency: string,
+): Promise<SuggestedBudgetItem[]> {
+  if (deliverables.length === 0) return [];
+
+  const catalog =
+    rateCardItems.length > 0
+      ? rateCardItems
+          .map(
+            (item) =>
+              `- id: ${item.id} — "${item.name}" (${item.pricing_type}, ${item.amount} ${currency})`,
+          )
+          .join("\n")
+      : "(el freelancer todavía no tiene un catálogo de tarifas configurado)";
+
+  const message = await getAnthropicClient().messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 1500,
+    system: BUDGET_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Moneda: ${currency}
+
+Catálogo de tarifas del freelancer:
+${catalog}
+
+Entregables detectados en el brief:
+${deliverables.map((d) => `- ${d}`).join("\n")}`,
+      },
+    ],
+  });
+
+  const textBlock = message.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") return [];
+
+  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return [];
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as { items: SuggestedBudgetItem[] };
+    return parsed.items ?? [];
+  } catch {
+    return [];
   }
 }

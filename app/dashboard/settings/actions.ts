@@ -54,6 +54,66 @@ export async function updateProfileAction(
   return { success: true };
 }
 
+const rateItemSchema = z.object({
+  name: z.string().min(1, "Ponle un nombre a cada tarifa"),
+  pricingType: z.enum(["fixed", "hourly", "monthly"]),
+  amount: z.coerce.number().min(0),
+});
+
+const rateCardSchema = z.object({
+  items: z.array(rateItemSchema),
+  defaultCurrency: z.string().min(1).max(8),
+  taxPercentage: z.coerce.number().min(0).max(100),
+});
+
+export async function saveRateCardAction(
+  input: z.infer<typeof rateCardSchema>,
+): Promise<UpdateProfileState> {
+  const parsed = rateCardSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado." };
+
+  // Reemplazo completo: más simple y seguro que diffear altas/bajas/ediciones
+  // para una lista corta que el usuario edita como un todo.
+  const { error: deleteError } = await supabase
+    .from("rate_card_items")
+    .delete()
+    .eq("user_id", user.id);
+  if (deleteError) return { error: "No se pudo guardar el catálogo de tarifas." };
+
+  if (parsed.data.items.length > 0) {
+    const { error: insertError } = await supabase.from("rate_card_items").insert(
+      parsed.data.items.map((item, index) => ({
+        user_id: user.id,
+        name: item.name,
+        pricing_type: item.pricingType,
+        amount: item.amount,
+        sort_order: index,
+      })),
+    );
+    if (insertError) return { error: "No se pudo guardar el catálogo de tarifas." };
+  }
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      default_currency: parsed.data.defaultCurrency,
+      tax_percentage: parsed.data.taxPercentage,
+    })
+    .eq("id", user.id);
+  if (profileError) return { error: "No se pudo guardar moneda/impuesto." };
+
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
 const notionSchema = z.object({
   notionToken: z.string().optional(),
   notionDatabaseId: z.string().optional(),

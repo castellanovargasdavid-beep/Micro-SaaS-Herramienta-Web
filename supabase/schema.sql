@@ -598,8 +598,77 @@ select
   valid_until,
   status,
   signer_name,
-  signed_at
+  signed_at,
+  subtotal,
+  discount_amount,
+  tax_percentage
 from public.proposals
 where status in ('sent', 'accepted');
 
 grant select on public.proposal_public to anon, authenticated;
+
+-- ============================================================================
+-- TARIFAS PERSONALIZADAS: catálogo de precios del usuario, usado por la IA
+-- para armar el desglose de presupuesto de una propuesta automáticamente.
+-- Ejecuta este bloque también si ya corriste el esquema antes — es idempotente.
+-- ============================================================================
+
+do $$ begin
+  create type rate_pricing_type as enum ('fixed', 'hourly', 'monthly');
+exception when duplicate_object then null; end $$;
+
+alter table public.profiles
+  add column if not exists default_currency text not null default 'USD',
+  add column if not exists tax_percentage numeric(5, 2) not null default 0;
+
+create table if not exists public.rate_card_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null,
+  pricing_type rate_pricing_type not null default 'fixed',
+  amount numeric(12, 2) not null default 0,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.rate_card_items is 'Catálogo de precios propio de cada usuario (ej. "Diseño landing page — 600 EUR fijo", "Desarrollo frontend — 45 EUR/hora"). La IA lo usa para sugerir el presupuesto de una propuesta a partir de los entregables del brief.';
+
+create index if not exists idx_rate_card_items_user_id on public.rate_card_items (user_id);
+
+drop trigger if exists trg_rate_card_items_updated_at on public.rate_card_items;
+create trigger trg_rate_card_items_updated_at
+  before update on public.rate_card_items
+  for each row execute function public.set_updated_at();
+
+alter table public.rate_card_items enable row level security;
+
+drop policy if exists "rate_card_items_owner_select" on public.rate_card_items;
+create policy "rate_card_items_owner_select"
+  on public.rate_card_items for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "rate_card_items_owner_insert" on public.rate_card_items;
+create policy "rate_card_items_owner_insert"
+  on public.rate_card_items for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "rate_card_items_owner_update" on public.rate_card_items;
+create policy "rate_card_items_owner_update"
+  on public.rate_card_items for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "rate_card_items_owner_delete" on public.rate_card_items;
+create policy "rate_card_items_owner_delete"
+  on public.rate_card_items for delete
+  using (auth.uid() = user_id);
+
+-- Desglose de presupuesto en la propuesta: `price` sigue siendo el total final
+-- (compatibilidad con propuestas creadas antes de esta función); estas
+-- columnas nuevas son opcionales y solo se completan cuando la propuesta se
+-- arma desde el editor de presupuesto con el rate card.
+alter table public.proposals
+  add column if not exists subtotal numeric(12, 2),
+  add column if not exists discount_amount numeric(12, 2) not null default 0,
+  add column if not exists tax_percentage numeric(5, 2) not null default 0;

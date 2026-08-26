@@ -24,6 +24,12 @@ import { Label } from "@/components/ui/label";
 import { SignaturePad } from "@/components/public/signature-pad";
 import type { ProposalPublic } from "@/types/database";
 
+const PRICING_TYPE_LABELS: Record<string, string> = {
+  fixed: "Fijo",
+  hourly: "Por hora",
+  monthly: "Por mes",
+};
+
 export function ProposalSigningView({ proposal }: { proposal: ProposalPublic }) {
   const [status, setStatus] = useState(proposal.status);
   const [signerName, setSignerName] = useState(proposal.signer_name ?? "");
@@ -32,6 +38,10 @@ export function ProposalSigningView({ proposal }: { proposal: ProposalPublic }) 
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const hasPricedItems = proposal.scope_items.some((item) => item.unitPrice != null);
+  const taxAmount =
+    ((proposal.subtotal ?? 0) - proposal.discount_amount) * (proposal.tax_percentage / 100);
 
   async function handleSign() {
     if (!nameDraft.trim()) {
@@ -76,24 +86,89 @@ export function ProposalSigningView({ proposal }: { proposal: ProposalPublic }) 
 
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold">Alcance del proyecto</h2>
-        <ul className="mt-3 space-y-3">
-          {proposal.scope_items.map((item, i) => (
-            <li key={i} className="text-sm">
-              <p className="font-medium">{item.label}</p>
-              {item.description && (
-                <p className="text-muted-foreground">{item.description}</p>
-              )}
-            </li>
-          ))}
-        </ul>
 
-        {proposal.price != null && (
-          <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-            <span className="text-sm font-medium">Precio total</span>
-            <span className="text-lg font-bold">
-              {proposal.currency} {proposal.price.toLocaleString()}
-            </span>
+        {hasPricedItems ? (
+          <div className="mt-3 space-y-3">
+            {proposal.scope_items.map((item, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 text-sm">
+                <div>
+                  <p className="font-medium">{item.label}</p>
+                  {item.description && (
+                    <p className="text-muted-foreground">{item.description}</p>
+                  )}
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {item.pricingType && PRICING_TYPE_LABELS[item.pricingType]}
+                    {item.pricingType === "hourly" && item.quantity != null
+                      ? ` · ${item.quantity} h`
+                      : ""}
+                    {item.unitPrice != null &&
+                      ` · ${proposal.currency} ${item.unitPrice.toLocaleString()}${
+                        item.pricingType === "hourly" ? "/h" : ""
+                      }`}
+                  </p>
+                </div>
+                {item.unitPrice != null && (
+                  <span className="shrink-0 font-medium">
+                    {proposal.currency}{" "}
+                    {((item.quantity ?? 1) * item.unitPrice).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            ))}
+
+            <div className="space-y-1.5 border-t border-border pt-3">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Subtotal</span>
+                <span>
+                  {proposal.currency} {(proposal.subtotal ?? 0).toLocaleString()}
+                </span>
+              </div>
+              {proposal.discount_amount > 0 && (
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Descuento</span>
+                  <span>
+                    -{proposal.currency} {proposal.discount_amount.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {proposal.tax_percentage > 0 && (
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Impuesto ({proposal.tax_percentage}%)</span>
+                  <span>
+                    {proposal.currency} {taxAmount.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between border-t border-border pt-2">
+                <span className="text-sm font-medium">Total</span>
+                <span className="text-lg font-bold">
+                  {proposal.currency} {(proposal.price ?? 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
           </div>
+        ) : (
+          <>
+            <ul className="mt-3 space-y-3">
+              {proposal.scope_items.map((item, i) => (
+                <li key={i} className="text-sm">
+                  <p className="font-medium">{item.label}</p>
+                  {item.description && (
+                    <p className="text-muted-foreground">{item.description}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {proposal.price != null && (
+              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                <span className="text-sm font-medium">Precio total</span>
+                <span className="text-lg font-bold">
+                  {proposal.currency} {proposal.price.toLocaleString()}
+                </span>
+              </div>
+            )}
+          </>
         )}
 
         {proposal.valid_until && (

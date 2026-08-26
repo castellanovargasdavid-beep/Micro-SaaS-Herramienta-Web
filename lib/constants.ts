@@ -141,6 +141,7 @@ export const PRICING_PLANS = [
     features: [
       "Briefs ilimitados",
       "Personalización de marca (logo y color)",
+      "Presupuestos automáticos con tu tarifario",
       "Exportación a PDF y Notion",
       "Plantillas premium por nicho",
       "Soporte prioritario",

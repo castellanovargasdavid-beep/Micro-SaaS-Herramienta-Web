@@ -1,3 +1,4 @@
+import { AutoPricingDemo } from "@/components/landing/auto-pricing-demo";
 import { BeforeAfter } from "@/components/landing/before-after";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Hero } from "@/components/landing/hero";
@@ -21,6 +22,7 @@ export default async function LandingPage() {
         <StatsSection />
         <BeforeAfter />
         <VoiceToProposalDemo />
+        <AutoPricingDemo />
         <TemplatesGrid />
         <Testimonials />
         <PricingTable ltdSeatsRemaining={ltdSeatsRemaining} />

@@ -7,7 +7,8 @@ import {
   createProposalAction,
   type ProposalActionState,
 } from "@/app/dashboard/proposals/actions";
-import { ScopeItemsEditor } from "@/components/proposals/scope-items-editor";
+import { BudgetBreakdownEditor } from "@/components/proposals/budget-breakdown-editor";
+import { BudgetTotalsEditor } from "@/components/proposals/budget-totals-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,8 @@ export function NewProposalForm({
   initialClientName,
   initialClientEmail,
   initialScopeItems,
+  defaultCurrency,
+  defaultTaxPercentage,
 }: {
   briefId: string | null;
   submissionId: string | null;
@@ -30,8 +33,12 @@ export function NewProposalForm({
   initialClientName: string;
   initialClientEmail: string;
   initialScopeItems: ProposalScopeItem[];
+  defaultCurrency: string;
+  defaultTaxPercentage: number;
 }) {
   const [scopeItems, setScopeItems] = useState<ProposalScopeItem[]>(initialScopeItems);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [taxPercentage, setTaxPercentage] = useState(defaultTaxPercentage);
   const [state, formAction, pending] = useActionState(createProposalAction, initialState);
 
   return (
@@ -39,6 +46,9 @@ export function NewProposalForm({
       <input type="hidden" name="briefId" value={briefId ?? ""} />
       <input type="hidden" name="submissionId" value={submissionId ?? ""} />
       <input type="hidden" name="scopeItems" value={JSON.stringify(scopeItems)} />
+      <input type="hidden" name="discountAmount" value={discountAmount} />
+      <input type="hidden" name="taxPercentage" value={taxPercentage} />
+      <input type="hidden" name="currency" value={defaultCurrency} />
 
       <div className="space-y-1.5">
         <Label htmlFor="title">Título de la propuesta</Label>
@@ -72,30 +82,33 @@ export function NewProposalForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Alcance del proyecto</Label>
-        <ScopeItemsEditor items={scopeItems} onChange={setScopeItems} />
+        <Label htmlFor="validUntil">Válida hasta</Label>
+        <Input id="validUntil" name="validUntil" type="date" className="max-w-48" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="price">Precio</Label>
-          <Input id="price" name="price" type="number" min="0" step="0.01" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="currency">Moneda</Label>
-          <Input id="currency" name="currency" defaultValue="USD" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="validUntil">Válida hasta</Label>
-          <Input id="validUntil" name="validUntil" type="date" />
-        </div>
+      <div className="space-y-1.5">
+        <Label>Presupuesto</Label>
+        <BudgetBreakdownEditor
+          items={scopeItems}
+          onChange={setScopeItems}
+          currency={defaultCurrency}
+        />
       </div>
+
+      <BudgetTotalsEditor
+        items={scopeItems}
+        discountAmount={discountAmount}
+        onDiscountChange={setDiscountAmount}
+        taxPercentage={taxPercentage}
+        onTaxChange={setTaxPercentage}
+        currency={defaultCurrency}
+      />
 
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
       <Button type="submit" variant="gradient" disabled={pending}>
         {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-        Crear propuesta
+        Generar propuesta con presupuesto
       </Button>
     </form>
   );
