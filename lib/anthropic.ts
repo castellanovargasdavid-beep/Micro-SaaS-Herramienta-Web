@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+import { cleanWhatsappNoise, incidentBriefSchema } from "@/lib/incidents";
 import type {
   AiSummary,
   BriefQuestion,
+  IncidentBrief,
   ProposalScopeItem,
   RateCardItem,
 } from "@/types/database";
@@ -317,4 +319,74 @@ ${deliverables.map((d) => `- ${d}`).join("\n")}`,
   } catch {
     return [];
   }
+}
+
+const INCIDENT_SYSTEM_PROMPT = `Eres un agente de soporte técnico senior. Recibes mensajes desestructurados
+de un cliente —copiados de un chat de WhatsApp o transcritos de una nota de voz— y tu trabajo es convertirlos
+en un brief de incidencia claro y accionable para que el equipo de soporte pueda actuar de inmediato.
+
+Reglas:
+- Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
+- Ignora marcas de tiempo, nombres de remitente y ruido conversacional (saludos, "jaja", emojis sueltos,
+  "¿estás ahí?", etc.) — quédate solo con la información relevante al problema.
+- "prioridad" refleja el impacto real descrito por el cliente, no su tono emocional: "Crítica" solo si el
+  cliente no puede operar en absoluto o hay pérdida de datos/dinero; "Alta" si un flujo importante está
+  roto pero hay alternativa; "Media" para bugs molestos pero no bloqueantes; "Baja" para peticiones
+  cosméticas o dudas menores.
+- "tipo" clasifica la naturaleza: "Error" (mensaje de error o falla técnica concreta), "Bug" (algo no se
+  comporta como debería pero sin mensaje de error explícito), "Petición" (el cliente pide una función o
+  cambio nuevo), "Soporte técnico" (duda de uso, configuración o consulta general).
+- "pasos_para_reproducir" solo aplica a errores/bugs reproducibles; si el cliente no describió pasos o no
+  aplica (p. ej. es una petición), devuelve un array vacío — nunca inventes pasos que no mencionó.
+- "datos_contacto_cliente": extrae nombre, email o teléfono SOLO si aparecen explícitamente en el mensaje.
+  Cualquier campo no mencionado debe ser null — nunca inventes ni asumas un dato de contacto.
+- "acciones_sugeridas" son los primeros pasos concretos que el equipo de soporte debería tomar (ej. "Pedir
+  captura de pantalla del error", "Revisar logs del servidor de pagos del día X", "Confirmar versión de la
+  app que usa el cliente") — nunca una solución inventada que no puedas fundamentar en el mensaje.
+- Escribe en español neutro, tono profesional y directo.
+
+El JSON debe tener exactamente esta forma:
+{
+  "titulo_corto": string,
+  "prioridad": "Baja" | "Media" | "Alta" | "Crítica",
+  "tipo": "Error" | "Bug" | "Petición" | "Soporte técnico",
+  "descripcion_problema": string,
+  "pasos_para_reproducir": string[],
+  "datos_contacto_cliente": { "nombre": string | null, "email": string | null, "telefono": string | null },
+  "acciones_sugeridas": string[]
+}`;
+
+/**
+ * Convierte un mensaje desestructurado (chat de WhatsApp pegado, o
+ * transcripción de una nota de voz) en un brief de incidencia estructurado.
+ * Lanza si Claude no devuelve un JSON válido o si no cumple el schema
+ * esperado — el llamador decide cómo comunicar el error al usuario.
+ */
+export async function generateIncidentBrief(rawText: string): Promise<IncidentBrief> {
+  const cleaned = cleanWhatsappNoise(rawText);
+
+  const message = await getAnthropicClient().messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 1500,
+    system: INCIDENT_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Mensaje del cliente (ya limpiado de ruido de chat):\n\n${cleaned}`,
+      },
+    ],
+  });
+
+  const textBlock = message.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("Claude no devolvió contenido de texto.");
+  }
+
+  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("No se pudo extraer JSON de la respuesta de Claude.");
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  return incidentBriefSchema.parse(parsed);
 }

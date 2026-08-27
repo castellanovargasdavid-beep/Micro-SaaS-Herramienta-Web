@@ -672,3 +672,77 @@ alter table public.proposals
   add column if not exists subtotal numeric(12, 2),
   add column if not exists discount_amount numeric(12, 2) not null default 0,
   add column if not exists tax_percentage numeric(5, 2) not null default 0;
+
+-- ============================================================================
+-- CHATBOT DE INCIDENCIAS: ingesta de mensajes de WhatsApp desordenados o notas
+-- de voz, estructurados por la IA en un "Brief de Incidencia" accionable.
+-- Ejecuta este bloque también si ya corriste el esquema antes — es idempotente.
+-- ============================================================================
+
+do $$ begin
+  create type incident_priority as enum ('Baja', 'Media', 'Alta', 'Crítica');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type incident_type as enum ('Error', 'Bug', 'Petición', 'Soporte técnico');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type incident_status as enum ('draft', 'confirmed', 'archived');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type incident_source as enum ('text', 'audio');
+exception when duplicate_object then null; end $$;
+
+create table if not exists public.incidents (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  priority incident_priority not null default 'Media',
+  type incident_type not null default 'Soporte técnico',
+  description text not null default '',
+  repro_steps text[] not null default '{}',
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  suggested_actions text[] not null default '{}',
+  raw_input text not null default '',
+  source incident_source not null default 'text',
+  status incident_status not null default 'draft',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.incidents is 'Briefs de incidencia generados por el chatbot a partir de mensajes de WhatsApp pegados o notas de voz transcritas.';
+
+create index if not exists idx_incidents_user_id on public.incidents (user_id);
+create index if not exists idx_incidents_status on public.incidents (status);
+
+drop trigger if exists trg_incidents_updated_at on public.incidents;
+create trigger trg_incidents_updated_at
+  before update on public.incidents
+  for each row execute function public.set_updated_at();
+
+alter table public.incidents enable row level security;
+
+drop policy if exists "incidents_owner_select" on public.incidents;
+create policy "incidents_owner_select"
+  on public.incidents for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "incidents_owner_insert" on public.incidents;
+create policy "incidents_owner_insert"
+  on public.incidents for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "incidents_owner_update" on public.incidents;
+create policy "incidents_owner_update"
+  on public.incidents for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "incidents_owner_delete" on public.incidents;
+create policy "incidents_owner_delete"
+  on public.incidents for delete
+  using (auth.uid() = user_id);

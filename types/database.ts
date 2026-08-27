@@ -13,6 +13,10 @@ export type SubscriptionPlan = "pro_monthly" | "lifetime";
 export type AttachmentKind = "audio" | "pdf" | "image" | "file";
 export type ProposalStatus = "draft" | "sent" | "accepted" | "declined";
 export type RatePricingType = "fixed" | "hourly" | "monthly";
+export type IncidentPriority = "Baja" | "Media" | "Alta" | "Crítica";
+export type IncidentType = "Error" | "Bug" | "Petición" | "Soporte técnico";
+export type IncidentStatus = "draft" | "confirmed" | "archived";
+export type IncidentSource = "text" | "audio";
 
 export type QuestionType =
   | "text"
@@ -57,6 +61,23 @@ export interface ProposalScopeItem {
   needsReview?: boolean;
   /** id del rate_card_item usado para esta línea, si vino de un match. */
   matchedRateItemId?: string | null;
+}
+
+export interface IncidentContact {
+  nombre: string | null;
+  email: string | null;
+  telefono: string | null;
+}
+
+/** Forma exacta del JSON que devuelve Claude al estructurar una incidencia. */
+export interface IncidentBrief {
+  titulo_corto: string;
+  prioridad: IncidentPriority;
+  tipo: IncidentType;
+  descripcion_problema: string;
+  pasos_para_reproducir: string[];
+  datos_contacto_cliente: IncidentContact;
+  acciones_sugeridas: string[];
 }
 
 export interface Database {
@@ -308,6 +329,40 @@ export interface Database {
           },
         ];
       };
+      incidents: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          priority: IncidentPriority;
+          type: IncidentType;
+          description: string;
+          repro_steps: string[];
+          contact_name: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          suggested_actions: string[];
+          raw_input: string;
+          source: IncidentSource;
+          status: IncidentStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["incidents"]["Row"]> & {
+          user_id: string;
+          title: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["incidents"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "incidents_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       brief_public: {
@@ -357,5 +412,6 @@ export type SubmissionAttachment =
   Database["public"]["Tables"]["submission_attachments"]["Row"];
 export type Proposal = Database["public"]["Tables"]["proposals"]["Row"];
 export type RateCardItem = Database["public"]["Tables"]["rate_card_items"]["Row"];
+export type Incident = Database["public"]["Tables"]["incidents"]["Row"];
 export type BriefPublic = Database["public"]["Views"]["brief_public"]["Row"];
 export type ProposalPublic = Database["public"]["Views"]["proposal_public"]["Row"];
