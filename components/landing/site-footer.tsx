@@ -14,7 +14,7 @@ const FOOTER_LINKS = {
     { href: "/legal/privacidad", label: "Política de privacidad" },
   ],
   Soporte: [
-    { href: "mailto:hola@brieffast.app", label: "hola@brieffast.app" },
+    { href: "mailto:lecastvarg@gmail.com", label: "lecastvarg@gmail.com" },
   ],
 };
 

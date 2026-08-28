@@ -46,8 +46,8 @@ export default function PrivacyPage() {
       <p>
         Puedes solicitar la exportación o eliminación de tus datos personales
         y los de tu cuenta escribiendo a{" "}
-        <a className="underline" href="mailto:hola@brieffast.app">
-          hola@brieffast.app
+        <a className="underline" href="mailto:lecastvarg@gmail.com">
+          lecastvarg@gmail.com
         </a>
         .
       </p>

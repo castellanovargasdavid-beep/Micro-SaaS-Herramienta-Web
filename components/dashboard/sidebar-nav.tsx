@@ -69,8 +69,8 @@ export function SidebarNav() {
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Escríbenos a{" "}
-          <a href="mailto:hola@brieffast.app" className="text-primary hover:underline">
-            hola@brieffast.app
+          <a href="mailto:lecastvarg@gmail.com" className="text-primary hover:underline">
+            lecastvarg@gmail.com
           </a>
         </p>
       </div>

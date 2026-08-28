@@ -58,8 +58,8 @@ export default function TermsPage() {
       <h2 className="text-lg font-semibold text-foreground">6. Contacto</h2>
       <p>
         Para consultas sobre estos Términos, escríbenos a{" "}
-        <a className="underline" href="mailto:hola@brieffast.app">
-          hola@brieffast.app
+        <a className="underline" href="mailto:lecastvarg@gmail.com">
+          lecastvarg@gmail.com
         </a>
         .
       </p>
