@@ -582,6 +582,16 @@ create policy "proposals_owner_delete"
   on public.proposals for delete
   using (auth.uid() = user_id);
 
+-- Desglose de presupuesto en la propuesta: `price` sigue siendo el total final
+-- (compatibilidad con propuestas creadas antes de esta función); estas
+-- columnas nuevas son opcionales y solo se completan cuando la propuesta se
+-- arma desde el editor de presupuesto con el rate card. Va antes de
+-- proposal_public porque esa vista selecciona estas columnas.
+alter table public.proposals
+  add column if not exists subtotal numeric(12, 2),
+  add column if not exists discount_amount numeric(12, 2) not null default 0,
+  add column if not exists tax_percentage numeric(5, 2) not null default 0;
+
 -- Vista pública para la página de firma /p/[id]: solo visible cuando el
 -- freelancer ya la envió (o ya fue firmada), nunca en estado 'draft'.
 -- La firma en sí se escribe desde un server action con la service_role key
@@ -663,15 +673,6 @@ drop policy if exists "rate_card_items_owner_delete" on public.rate_card_items;
 create policy "rate_card_items_owner_delete"
   on public.rate_card_items for delete
   using (auth.uid() = user_id);
-
--- Desglose de presupuesto en la propuesta: `price` sigue siendo el total final
--- (compatibilidad con propuestas creadas antes de esta función); estas
--- columnas nuevas son opcionales y solo se completan cuando la propuesta se
--- arma desde el editor de presupuesto con el rate card.
-alter table public.proposals
-  add column if not exists subtotal numeric(12, 2),
-  add column if not exists discount_amount numeric(12, 2) not null default 0,
-  add column if not exists tax_percentage numeric(5, 2) not null default 0;
 
 -- ============================================================================
 -- CHATBOT DE INCIDENCIAS: ingesta de mensajes de WhatsApp desordenados o notas
