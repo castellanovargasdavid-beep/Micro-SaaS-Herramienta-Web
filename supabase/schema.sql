@@ -696,6 +696,28 @@ do $$ begin
   create type incident_source as enum ('text', 'audio');
 exception when duplicate_object then null; end $$;
 
+-- ============================================================================
+-- PERMISOS BASE: en un proyecto nuevo de Supabase, `anon`/`authenticated`
+-- reciben grants por defecto sobre las tablas de `public` automáticamente.
+-- Si este proyecto se reutilizó de otra app y esos default privileges se
+-- alteraron, las políticas RLS de arriba no alcanzan — Postgres exige el
+-- GRANT de tabla ANTES de evaluar RLS ("permission denied for table X" es un
+-- error distinto a "0 filas por RLS"). Estos GRANT son explícitos y no
+-- dependen de la configuración del proyecto. Es idempotente: correrlo de
+-- nuevo no hace nada distinto.
+-- ============================================================================
+
+grant select, update on public.profiles to authenticated;
+grant select on public.brief_templates to anon, authenticated;
+grant select, insert, update, delete on public.briefs to authenticated;
+grant insert on public.submissions to anon, authenticated;
+grant select, update, delete on public.submissions to authenticated;
+grant select on public.subscriptions to authenticated;
+grant insert on public.submission_attachments to anon, authenticated;
+grant select, delete on public.submission_attachments to authenticated;
+grant select, insert, update, delete on public.proposals to authenticated;
+grant select, insert, update, delete on public.rate_card_items to authenticated;
+
 create table if not exists public.incidents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -747,3 +769,5 @@ drop policy if exists "incidents_owner_delete" on public.incidents;
 create policy "incidents_owner_delete"
   on public.incidents for delete
   using (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.incidents to authenticated;
