@@ -717,11 +717,20 @@ exception when duplicate_object then null; end $$;
 grant select, update on public.profiles to authenticated;
 grant select on public.brief_templates to anon, authenticated;
 grant select, insert, update, delete on public.briefs to authenticated;
+-- `anon` también necesita SELECT sobre briefs/submissions/submission_attachments
+-- aunque solo pueda insertar: Postgres evalúa la política de SELECT de la
+-- tabla al hacer INSERT ... RETURNING (lo que PostgREST siempre pide), y esas
+-- políticas de "solo el dueño ve esto" consultan estas tablas directamente.
+-- RLS igual las deja en 0 filas para anon (sigue siendo privado) — sin el
+-- GRANT, en vez de 0 filas da "permission denied" y la petición completa falla.
+grant select on public.briefs to anon;
 grant insert on public.submissions to anon, authenticated;
 grant select, update, delete on public.submissions to authenticated;
+grant select on public.submissions to anon;
 grant select on public.subscriptions to authenticated;
 grant insert on public.submission_attachments to anon, authenticated;
 grant select, delete on public.submission_attachments to authenticated;
+grant select on public.submission_attachments to anon;
 grant select, insert, update, delete on public.proposals to authenticated;
 grant select, insert, update, delete on public.rate_card_items to authenticated;
 
