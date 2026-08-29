@@ -247,9 +247,14 @@ create policy "submissions_public_insert"
   on public.submissions for insert
   to anon, authenticated
   with check (
+    -- Consulta brief_public (no la tabla base): anon no tiene ninguna
+    -- política de SELECT sobre `briefs`, así que un EXISTS contra la tabla
+    -- base siempre da 0 filas para un visitante anónimo real y esta
+    -- inserción se rechazaría siempre. La vista corre con los permisos de
+    -- quien la creó, no del rol que consulta, así que sí es visible aquí.
     exists (
-      select 1 from public.briefs b
-      where b.id = brief_id and b.status = 'published'
+      select 1 from public.brief_public b
+      where b.id = brief_id
     )
   );
 
@@ -478,9 +483,11 @@ drop policy if exists "attachments_public_insert" on public.submission_attachmen
 create policy "attachments_public_insert"
   on public.submission_attachments for insert
   to anon, authenticated
-  with check (
-    exists (select 1 from public.submissions s where s.id = submission_id)
-  );
+  -- No se valida vía EXISTS contra `submissions` por el mismo motivo que
+  -- submissions_public_insert: anon no puede ver filas de esa tabla, así que
+  -- el EXISTS siempre daría 0. La foreign key en submission_id ya garantiza
+  -- que apunte a una submission real, sin necesidad de ese chequeo aquí.
+  with check (true);
 
 drop policy if exists "attachments_owner_select" on public.submission_attachments;
 create policy "attachments_owner_select"
