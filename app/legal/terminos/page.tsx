@@ -47,12 +47,18 @@ export default function TermsPage() {
         derecho de suspender cuentas que incumplan estos Términos.
       </p>
 
-      <h2 className="text-lg font-semibold text-foreground">5. Cancelación</h2>
+      <h2 className="text-lg font-semibold text-foreground">5. Cancelación y reembolsos</h2>
       <p>
         Puedes cancelar tu suscripción Pro en cualquier momento; el acceso
-        continuará hasta el final del período ya pagado. El plan Lifetime no
-        es reembolsable pasado el período de garantía indicado al momento de
-        la compra.
+        continuará hasta el final del período ya pagado, sin reembolso
+        proporcional por el tiempo restante. El plan Lifetime tiene una
+        garantía de devolución de 7 días naturales desde la fecha de compra:
+        si dentro de ese plazo escribes a{" "}
+        <a className="underline" href="mailto:lecastvarg@gmail.com">
+          lecastvarg@gmail.com
+        </a>{" "}
+        solicitando el reembolso, te devolvemos el 100% de lo pagado. Pasado
+        ese plazo, el plan Lifetime no es reembolsable.
       </p>
 
       <h2 className="text-lg font-semibold text-foreground">6. Contacto</h2>

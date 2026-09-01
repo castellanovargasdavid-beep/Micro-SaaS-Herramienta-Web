@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, Flame } from "lucide-react";
+import { Check, Flame, RefreshCcw, ShieldCheck, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,21 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
         <p className="mt-4 text-muted-foreground">
           Sin contratos largos, sin letra pequeña. Cancela cuando quieras.
         </p>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <XCircle className="size-3.5 text-success" />
+            Sin tarjeta para el plan gratis
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <RefreshCcw className="size-3.5 text-success" />
+            Cancela Pro cuando quieras
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="size-3.5 text-success" />
+            Garantía de 7 días en Lifetime
+          </span>
+        </div>
       </div>
 
       <div className="mt-14 grid gap-6 lg:grid-cols-3">
@@ -102,7 +117,7 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                 )}
               </CardContent>
 
-              <CardFooter>
+              <CardFooter className="flex-col gap-2.5">
                 {isLtd && ltdSeatsRemaining <= 0 ? (
                   <Button variant="outline" className="w-full" disabled>
                     Cupos agotados
@@ -121,6 +136,12 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                       {plan.cta}
                     </Link>
                   </Button>
+                )}
+                {isLtd && (
+                  <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                    <ShieldCheck className="size-3.5 text-success" />
+                    Si no te convence, te devolvemos tu dinero en 7 días
+                  </p>
                 )}
               </CardFooter>
             </Card>

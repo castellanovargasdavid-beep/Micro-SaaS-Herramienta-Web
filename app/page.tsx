@@ -1,5 +1,6 @@
 import { AutoPricingDemo } from "@/components/landing/auto-pricing-demo";
 import { BeforeAfter } from "@/components/landing/before-after";
+import { Faq } from "@/components/landing/faq";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Hero } from "@/components/landing/hero";
 import { PricingTable } from "@/components/landing/pricing-table";
@@ -26,6 +27,7 @@ export default async function LandingPage() {
         <TemplatesGrid />
         <Testimonials />
         <PricingTable ltdSeatsRemaining={ltdSeatsRemaining} />
+        <Faq />
         <FinalCta />
       </main>
       <SiteFooter />
