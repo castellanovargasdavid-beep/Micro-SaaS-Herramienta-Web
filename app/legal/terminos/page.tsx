@@ -47,7 +47,9 @@ export default function TermsPage() {
         derecho de suspender cuentas que incumplan estos Términos.
       </p>
 
-      <h2 className="text-lg font-semibold text-foreground">5. Cancelación y reembolsos</h2>
+      <h2 id="reembolsos" className="text-lg font-semibold text-foreground scroll-mt-24">
+        5. Cancelación y reembolsos
+      </h2>
       <p>
         Puedes cancelar tu suscripción Pro en cualquier momento; el acceso
         continuará hasta el final del período ya pagado, sin reembolso

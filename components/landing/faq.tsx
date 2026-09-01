@@ -27,9 +27,24 @@ const FAQ_ITEMS = [
       "Sí, sin permanencia. Cancelas cuando quieras y mantienes el acceso hasta el final del período que ya pagaste.",
   },
   {
-    question: "Compré el plan Lifetime y no me convenció, ¿qué hago?",
+    question: "¿Cómo funciona la garantía de 15 días del plan Lifetime?",
     answer:
-      "Tienes 15 días naturales desde la compra para pedir un reembolso completo, sin preguntas. Solo escríbenos.",
+      "Tienes 15 días naturales desde la fecha de compra. Si no te convence, mandas un correo pidiendo el reembolso y te devolvemos el 100% de lo pagado, sin preguntas ni trámites adicionales.",
+  },
+  {
+    question: "¿Por qué un pago único y no una suscripción?",
+    answer:
+      "El plan Lifetime es una oferta de lanzamiento: en vez de pagar mes a mes, pagas $49 una sola vez y tienes acceso Pro para siempre. Es una promoción limitada a los primeros 100 usuarios — una vez que se agoten los cupos, el acceso solo estará disponible por suscripción mensual.",
+  },
+  {
+    question: "¿Tendré acceso a futuras actualizaciones?",
+    answer:
+      "Sí. El plan Lifetime incluye todas las funciones nuevas que lancemos después, sin costo adicional ni límite de tiempo — no es una versión congelada del producto.",
+  },
+  {
+    question: "¿Hay límites de uso o de proyectos?",
+    answer:
+      "En el plan Free sí: hasta 2 briefs activos por mes. En Pro y Lifetime los briefs son ilimitados — puedes tener tantos proyectos y clientes activos como necesites.",
   },
   {
     question: "¿Qué tan precisos son los resúmenes que genera la IA?",

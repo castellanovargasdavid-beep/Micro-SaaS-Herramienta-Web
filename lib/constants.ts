@@ -158,6 +158,8 @@ export const PRICING_PLANS = [
     id: "lifetime" as const,
     name: "Lifetime Deal",
     price: "$49",
+    originalPrice: "$149",
+    priceNote: "Oferta de lanzamiento",
     period: "pago único",
     description: "Acceso Pro de por vida. Oferta limitada a 100 usuarios.",
     features: [
@@ -166,7 +168,7 @@ export const PRICING_PLANS = [
       "Acceso a nuevas funciones incluido",
       "Badge de fundador en tu perfil",
     ],
-    cta: "Obtener Lifetime Deal",
+    cta: "Obtener Lifetime por $49",
     highlighted: false,
     badge: "Solo 100 cupos",
   },

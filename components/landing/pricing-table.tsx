@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, Flame, RefreshCcw, ShieldCheck, XCircle } from "lucide-react";
+import { Check, Flame, Lock, RefreshCcw, ShieldCheck, XCircle, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,12 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                     </Badge>
                   )}
                 </div>
-                <div className="mt-2 flex items-baseline gap-1">
+                <div className="mt-2 flex items-baseline gap-1.5">
+                  {"originalPrice" in plan && (
+                    <span className="text-lg text-muted-foreground line-through">
+                      {plan.originalPrice}
+                    </span>
+                  )}
                   <span className="text-4xl font-bold tracking-tight">
                     {plan.price}
                   </span>
@@ -86,6 +91,12 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                     {plan.period}
                   </span>
                 </div>
+                {"priceNote" in plan && (
+                  <span className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-brand-orange">
+                    <Zap className="size-3" />
+                    {plan.priceNote}
+                  </span>
+                )}
                 <CardDescription className="pt-1">
                   {plan.description}
                 </CardDescription>
@@ -102,18 +113,31 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                 </ul>
 
                 {isLtd && (
-                  <div className="mt-5">
-                    <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{seatsUsed}/{LTD_SEATS_LIMIT} cupos usados</span>
-                      <span>{ltdSeatsRemaining} disponibles</span>
+                  <>
+                    <div className="mt-5 rounded-xl border border-dashed border-border p-3.5 text-xs">
+                      <div className="flex items-center justify-between py-1 text-muted-foreground">
+                        <span>Suscripción típica</span>
+                        <span>~$20/mes · $240/año</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border/60 py-1 pt-2 font-semibold">
+                        <span>BriefFast Lifetime</span>
+                        <span className="text-success">$49 una vez, para siempre</span>
+                      </div>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-warning"
-                        style={{ width: `${seatsPct}%` }}
-                      />
+
+                    <div className="mt-5">
+                      <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{seatsUsed}/{LTD_SEATS_LIMIT} cupos usados</span>
+                        <span>{ltdSeatsRemaining} disponibles</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-warning"
+                          style={{ width: `${seatsPct}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </CardContent>
 
@@ -138,10 +162,20 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                   </Button>
                 )}
                 {isLtd && (
-                  <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                    <ShieldCheck className="size-3.5 text-success" />
-                    Si no te convence, te devolvemos tu dinero en 15 días
-                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Lock className="size-3 text-success" />
+                      Pago seguro SSL
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <ShieldCheck className="size-3 text-success" />
+                      Garantía de 15 días
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Zap className="size-3 text-success" />
+                      Acceso inmediato
+                    </span>
+                  </div>
                 )}
               </CardFooter>
             </Card>

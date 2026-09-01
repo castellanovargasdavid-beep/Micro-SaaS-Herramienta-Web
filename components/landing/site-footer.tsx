@@ -12,6 +12,7 @@ const FOOTER_LINKS = {
   Legal: [
     { href: "/legal/terminos", label: "Términos de servicio" },
     { href: "/legal/privacidad", label: "Política de privacidad" },
+    { href: "/legal/terminos#reembolsos", label: "Política de reembolsos" },
   ],
   Soporte: [
     { href: "mailto:lecastvarg@gmail.com", label: "lecastvarg@gmail.com" },
