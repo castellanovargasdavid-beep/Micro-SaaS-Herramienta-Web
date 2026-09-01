@@ -52,7 +52,7 @@ export default function TermsPage() {
         Puedes cancelar tu suscripción Pro en cualquier momento; el acceso
         continuará hasta el final del período ya pagado, sin reembolso
         proporcional por el tiempo restante. El plan Lifetime tiene una
-        garantía de devolución de 7 días naturales desde la fecha de compra:
+        garantía de devolución de 15 días naturales desde la fecha de compra:
         si dentro de ese plazo escribes a{" "}
         <a className="underline" href="mailto:lecastvarg@gmail.com">
           lecastvarg@gmail.com

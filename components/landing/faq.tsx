@@ -29,7 +29,7 @@ const FAQ_ITEMS = [
   {
     question: "Compré el plan Lifetime y no me convenció, ¿qué hago?",
     answer:
-      "Tienes 7 días naturales desde la compra para pedir un reembolso completo, sin preguntas. Solo escríbenos.",
+      "Tienes 15 días naturales desde la compra para pedir un reembolso completo, sin preguntas. Solo escríbenos.",
   },
   {
     question: "¿Qué tan precisos son los resúmenes que genera la IA?",

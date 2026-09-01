@@ -40,7 +40,7 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="size-3.5 text-success" />
-            Garantía de 7 días en Lifetime
+            Garantía de 15 días en Lifetime
           </span>
         </div>
       </div>
@@ -140,7 +140,7 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                 {isLtd && (
                   <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                     <ShieldCheck className="size-3.5 text-success" />
-                    Si no te convence, te devolvemos tu dinero en 7 días
+                    Si no te convence, te devolvemos tu dinero en 15 días
                   </p>
                 )}
               </CardFooter>
