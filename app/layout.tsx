@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description:
     "BriefFast transforma los requerimientos caóticos de tus clientes en briefs estructurados y ejecutables con IA. Ideal para freelancers, agencias boutique y creadores de contenido.",
   metadataBase: new URL(APP_URL),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: `${APP_NAME} — Briefs claros, en minutos`,
     description:
