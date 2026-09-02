@@ -14,7 +14,7 @@ export function getStripe(): Stripe {
   if (!_stripe) {
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2026-07-29.dahlia",
-      appInfo: { name: "BriefFast" },
+      appInfo: { name: "BriefQuick" },
     });
   }
   return _stripe;

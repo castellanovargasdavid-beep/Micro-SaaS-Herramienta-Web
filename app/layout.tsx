@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`,
   },
   description:
-    "BriefFast transforma los requerimientos caóticos de tus clientes en briefs estructurados y ejecutables con IA. Ideal para freelancers, agencias boutique y creadores de contenido.",
+    "BriefQuick transforma los requerimientos caóticos de tus clientes en briefs estructurados y ejecutables con IA. Ideal para freelancers, agencias boutique y creadores de contenido.",
   metadataBase: new URL(APP_URL),
   alternates: {
     canonical: "/",

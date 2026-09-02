@@ -81,7 +81,7 @@ const STEPS: GuideStep[] = [
     summary: "Un link único, sin registro para tu cliente.",
     details: [
       'Dale clic a "Publicar" — el brief pasa de borrador a publicado y se activa el enlace público.',
-      "Copia el enlace desde tu panel (algo como brieffast.app/b/xxxxx).",
+      "Copia el enlace desde tu panel (algo como briefquick.com/b/xxxxx).",
       "Mándaselo a tu cliente por WhatsApp, email o donde prefieras — no necesita crear cuenta ni instalar nada.",
     ],
   },

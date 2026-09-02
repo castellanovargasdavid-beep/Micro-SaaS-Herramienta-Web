@@ -1,5 +1,6 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { APP_NAME } from "@/lib/constants";
 import { computeItemSubtotal } from "@/lib/proposal-budget";
 import type { Proposal } from "@/types/database";
 
@@ -89,7 +90,7 @@ export function ProposalPdfDocument({ proposal }: { proposal: Proposal }) {
   return (
     <Document title={`Propuesta — ${proposal.title}`}>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.eyebrow}>Propuesta comercial · BriefFast</Text>
+        <Text style={styles.eyebrow}>Propuesta comercial · {APP_NAME}</Text>
         <Text style={styles.title}>{proposal.title}</Text>
         {proposal.client_name && (
           <Text style={styles.meta}>Para: {proposal.client_name}</Text>
@@ -226,7 +227,7 @@ export function ProposalPdfDocument({ proposal }: { proposal: Proposal }) {
           </View>
         )}
 
-        <Text style={styles.footer}>Generado con BriefFast · brieffast.app</Text>
+        <Text style={styles.footer}>Generado con {APP_NAME} · briefquick.com</Text>
       </Page>
     </Document>
   );

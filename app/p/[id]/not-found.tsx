@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { APP_NAME } from "@/lib/constants";
 
 export default function ProposalNotFound() {
   return (
@@ -14,7 +15,7 @@ export default function ProposalNotFound() {
         El enlace puede haber expirado o la propuesta todavía es un borrador.
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/">Ir a BriefFast</Link>
+        <Link href="/">Ir a {APP_NAME}</Link>
       </Button>
     </div>
   );

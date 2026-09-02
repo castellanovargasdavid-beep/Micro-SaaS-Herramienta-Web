@@ -30,7 +30,7 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 max-w-lg text-lg text-muted-foreground">
-            BriefFast convierte los requerimientos desordenados de tus
+            BriefQuick convierte los requerimientos desordenados de tus
             clientes en briefs estructurados y accionables. Envía un
             formulario, recibe respuestas, obtén un resumen ejecutivo listo
             para trabajar.

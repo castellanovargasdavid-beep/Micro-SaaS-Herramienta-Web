@@ -1,5 +1,5 @@
 -- ============================================================================
--- BriefFast — Esquema de base de datos (Supabase / PostgreSQL)
+-- BriefQuick — Esquema de base de datos (Supabase / PostgreSQL)
 -- Ejecutar en el SQL Editor de Supabase (o vía `supabase db push`).
 -- Idempotente: puede volver a ejecutarse sin duplicar objetos.
 -- ============================================================================
@@ -134,7 +134,7 @@ create table if not exists public.brief_templates (
   created_at timestamptz not null default now()
 );
 
-comment on table public.brief_templates is 'Plantillas globales (curadas por el equipo de BriefFast) usadas como punto de partida al crear un brief.';
+comment on table public.brief_templates is 'Plantillas globales (curadas por el equipo de BriefQuick) usadas como punto de partida al crear un brief.';
 
 alter table public.brief_templates enable row level security;
 

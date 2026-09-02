@@ -120,7 +120,7 @@ export function PricingTable({ ltdSeatsRemaining }: { ltdSeatsRemaining: number 
                         <span>~$20/mes · $240/año</span>
                       </div>
                       <div className="flex items-center justify-between border-t border-border/60 py-1 pt-2 font-semibold">
-                        <span>BriefFast Lifetime</span>
+                        <span>BriefQuick Lifetime</span>
                         <span className="text-success">$49 una vez, para siempre</span>
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { APP_NAME } from "@/lib/constants";
 import type { AiSummary } from "@/types/database";
 
 const styles = StyleSheet.create({
@@ -67,7 +68,7 @@ export function BriefPdfDocument({
   return (
     <Document title={`Brief — ${briefTitle}`}>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.eyebrow}>Brief ejecutivo · BriefFast</Text>
+        <Text style={styles.eyebrow}>Brief ejecutivo · {APP_NAME}</Text>
         <Text style={styles.title}>{briefTitle}</Text>
         {clientName && <Text style={styles.meta}>Cliente: {clientName}</Text>}
 
@@ -136,7 +137,7 @@ export function BriefPdfDocument({
           </View>
         )}
 
-        <Text style={styles.footer}>Generado con BriefFast · brieffast.app</Text>
+        <Text style={styles.footer}>Generado con {APP_NAME} · briefquick.com</Text>
       </Page>
     </Document>
   );

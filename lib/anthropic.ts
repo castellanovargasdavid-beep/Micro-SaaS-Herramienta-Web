@@ -178,7 +178,7 @@ ${
     : ""
 }
 ---
-_Generado con BriefFast_
+_Generado con BriefQuick_
 `;
 }
 

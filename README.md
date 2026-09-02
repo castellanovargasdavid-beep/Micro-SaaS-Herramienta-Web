@@ -1,4 +1,4 @@
-# BriefFast
+# BriefQuick
 
 Herramienta web para freelancers, agencias boutique y creadores de contenido
 que transforma requerimientos caóticos de clientes en briefs estructurados y
@@ -144,15 +144,15 @@ globales: cada freelancer conecta **su propia** cuenta de Notion desde
 2. En Notion, abre la base de datos donde quieres recibir los briefs → botón
    **"..."** → **Connections** → agrega la integración que acabas de crear.
 3. Copia el ID de la base de datos (los 32 caracteres en su URL).
-4. Pega ambos valores en Configuración → Integración con Notion, dentro de BriefFast.
+4. Pega ambos valores en Configuración → Integración con Notion, dentro de BriefQuick.
 
 ## 7. Configurar Stripe
 
 1. En el [Dashboard de Stripe](https://dashboard.stripe.com/test/apikeys), copia la
    clave secreta de test → `STRIPE_SECRET_KEY`.
 2. Ve a **Product catalog → Add product** y crea dos productos:
-   - **BriefFast Pro**: precio recurrente, $12.00 USD / mes → copia el `price_id` en `STRIPE_PRICE_PRO`
-   - **BriefFast Lifetime**: precio único, $49.00 USD → copia el `price_id` en `STRIPE_PRICE_LTD`
+   - **BriefQuick Pro**: precio recurrente, $12.00 USD / mes → copia el `price_id` en `STRIPE_PRICE_PRO`
+   - **BriefQuick Lifetime**: precio único, $49.00 USD → copia el `price_id` en `STRIPE_PRICE_LTD`
 3. Configura el webhook:
    - En desarrollo: instala la [Stripe CLI](https://docs.stripe.com/stripe-cli) y ejecuta
      ```bash

@@ -59,7 +59,7 @@ export function AutoPricingDemo() {
           Tu tarifario, convertido en presupuesto en segundos
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Configura tus precios una vez. BriefFast los cruza con lo que pide
+          Configura tus precios una vez. BriefQuick los cruza con lo que pide
           cada cliente y arma el desglose — tú solo revisas y envías.
         </p>
       </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { APP_NAME } from "@/lib/constants";
 
 export default function BriefNotFound() {
   return (
@@ -17,7 +18,7 @@ export default function BriefNotFound() {
         por su creador.
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/">Ir a BriefFast</Link>
+        <Link href="/">Ir a {APP_NAME}</Link>
       </Button>
     </div>
   );

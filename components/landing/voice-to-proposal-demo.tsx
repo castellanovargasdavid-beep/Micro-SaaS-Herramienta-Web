@@ -53,7 +53,7 @@ export function VoiceToProposalDemo() {
           </h2>
           <p className="mt-4 text-muted-foreground">
             Tu cliente no tiene por qué escribir. Graba una nota como en
-            WhatsApp — BriefFast la transcribe, la convierte en brief y arma
+            WhatsApp — BriefQuick la transcribe, la convierte en brief y arma
             la propuesta.
           </p>
         </div>

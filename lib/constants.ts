@@ -1,6 +1,6 @@
 import type { BriefNiche, PlanType } from "@/types/database";
 
-export const APP_NAME = "BriefFast";
+export const APP_NAME = "BriefQuick";
 
 // `||` (not `??`) on purpose: on some platforms an unset env var arrives as
 // an empty string rather than undefined, which `??` would not catch.
@@ -127,7 +127,7 @@ export const PRICING_PLANS = [
     name: "Free",
     price: "$0",
     period: "para siempre",
-    description: "Ideal para probar BriefFast en tus primeros proyectos.",
+    description: "Ideal para probar BriefQuick en tus primeros proyectos.",
     features: [
       "Hasta 2 briefs activos/mes",
       "Formulario público ilimitado de respuestas",
