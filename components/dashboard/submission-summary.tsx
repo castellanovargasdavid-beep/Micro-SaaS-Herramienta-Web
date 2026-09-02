@@ -24,6 +24,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EXTRA_NOTES_ANSWER_KEY } from "@/lib/constants";
 import type { AiSummary, AttachmentKind, BriefQuestion, SubmissionAttachment } from "@/types/database";
 
 const ATTACHMENT_ICONS: Record<AttachmentKind, typeof Mic> = {
@@ -241,6 +242,16 @@ export function SubmissionSummary({
               <p className="text-sm whitespace-pre-wrap">{answers[q.id]?.trim() || "—"}</p>
             </div>
           ))}
+          {answers[EXTRA_NOTES_ANSWER_KEY]?.trim() && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">
+                Notas adicionales del cliente
+              </p>
+              <p className="text-sm whitespace-pre-wrap">
+                {answers[EXTRA_NOTES_ANSWER_KEY]}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

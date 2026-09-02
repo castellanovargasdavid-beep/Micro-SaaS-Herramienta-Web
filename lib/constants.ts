@@ -2,6 +2,12 @@ import type { BriefNiche, PlanType } from "@/types/database";
 
 export const APP_NAME = "BriefQuick";
 
+// Clave reservada usada para guardar el texto libre que el cliente escribe
+// en el paso de adjuntos del formulario público, dentro del mismo objeto
+// `answers` (jsonb) — evita una migración de esquema para un solo campo
+// opcional. No puede chocar con un id de pregunta real (esos son UUID).
+export const EXTRA_NOTES_ANSWER_KEY = "_notas_adicionales";
+
 // `||` (not `??`) on purpose: on some platforms an unset env var arrives as
 // an empty string rather than undefined, which `??` would not catch.
 // Trailing slash stripped so `${APP_URL}/path` never produces a double slash

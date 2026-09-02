@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+import { EXTRA_NOTES_ANSWER_KEY } from "@/lib/constants";
 import { cleanWhatsappNoise, incidentBriefSchema } from "@/lib/incidents";
 import type {
   AiSummary,
@@ -70,6 +71,11 @@ function buildUserPrompt(
     })
     .join("\n");
 
+  const extraNotes = answers[EXTRA_NOTES_ANSWER_KEY]?.trim();
+  const extraNotesSection = extraNotes
+    ? `\n\nNotas adicionales escritas libremente por el cliente:\n${extraNotes}`
+    : "";
+
   const voiceSection =
     voiceTranscripts.length > 0
       ? `\n\nNotas de voz del cliente (transcritas automáticamente):\n${voiceTranscripts
@@ -80,7 +86,7 @@ function buildUserPrompt(
   return `Brief: "${briefTitle}"
 
 Respuestas del cliente:
-${qa}${voiceSection}
+${qa}${extraNotesSection}${voiceSection}
 
 Genera el resumen ejecutivo estructurado en el formato JSON indicado. Si hay documentos PDF adjuntos a este mensaje, incorpora su contenido relevante.`;
 }

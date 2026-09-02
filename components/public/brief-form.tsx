@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { EXTRA_NOTES_ANSWER_KEY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { BriefPublic } from "@/types/database";
 
@@ -48,6 +49,7 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
   const [clientEmail, setClientEmail] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [additionalNotes, setAdditionalNotes] = useState("");
   const [followupDraft, setFollowupDraft] = useState("");
   const [checkingAnswer, setCheckingAnswer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -168,10 +170,13 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
+    const finalAnswers = additionalNotes.trim()
+      ? { ...answers, [EXTRA_NOTES_ANSWER_KEY]: additionalNotes.trim() }
+      : answers;
     const result = await submitBriefAction(brief.id, brief.title, questions, {
       clientName,
       clientEmail,
-      answers,
+      answers: finalAnswers,
       attachments,
     });
     setSubmitting(false);
@@ -337,10 +342,23 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
           <StepShell key="attachments">
             <h2 className="text-xl font-semibold">¿Algo más que compartir?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Una nota de voz o un archivo pueden ayudar mucho — es opcional.
+              Una nota de voz, un archivo o unas palabras escritas — todo
+              ayuda, y es opcional.
             </p>
             <div className="mt-5">
               <AttachmentsStep value={attachments} onChange={setAttachments} />
+            </div>
+            <div className="mt-4 space-y-1.5">
+              <Label htmlFor="additionalNotes">
+                ¿Quieres escribir algo más aquí mismo? (opcional)
+              </Label>
+              <Textarea
+                id="additionalNotes"
+                value={additionalNotes}
+                onChange={(e) => setAdditionalNotes(e.target.value)}
+                placeholder="Cualquier detalle extra, referencia o aclaración que quieras agregar..."
+                rows={4}
+              />
             </div>
             <StepNav onBack={goBack} onNext={() => setStep({ kind: "review" })} />
           </StepShell>
@@ -371,6 +389,14 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
                   </dd>
                 </div>
               ))}
+              {additionalNotes.trim() && (
+                <div className="pt-3">
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Notas adicionales
+                  </dt>
+                  <dd className="text-sm whitespace-pre-wrap">{additionalNotes}</dd>
+                </div>
+              )}
               {attachments.length > 0 && (
                 <div className="pt-3">
                   <dt className="text-xs font-medium text-muted-foreground">
