@@ -81,6 +81,7 @@ const updateBriefSchema = z.object({
   title: z.string().min(3),
   introMessage: z.string().optional(),
   brandColor: z.string().optional(),
+  editWindowHours: z.number().int().min(0).max(720),
   questions: z.array(
     z.object({
       id: z.string(),
@@ -113,6 +114,7 @@ export async function updateBriefAction(
       title: parsed.data.title,
       intro_message: parsed.data.introMessage || null,
       brand_color: parsed.data.brandColor || null,
+      edit_window_hours: parsed.data.editWindowHours,
       questions: parsed.data.questions,
     })
     .eq("id", parsed.data.briefId);

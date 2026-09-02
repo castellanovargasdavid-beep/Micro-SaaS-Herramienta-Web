@@ -40,6 +40,9 @@ export function BriefSettingsForm({ brief }: { brief: Brief }) {
   const [title, setTitle] = useState(brief.title);
   const [introMessage, setIntroMessage] = useState(brief.intro_message ?? "");
   const [brandColor, setBrandColor] = useState(brief.brand_color ?? "#6d28d9");
+  const [editWindowHours, setEditWindowHours] = useState(
+    String(brief.edit_window_hours),
+  );
   const [questions, setQuestions] = useState<BriefQuestion[]>(brief.questions);
   const [isPending, startTransition] = useTransition();
 
@@ -68,6 +71,7 @@ export function BriefSettingsForm({ brief }: { brief: Brief }) {
         title,
         introMessage,
         brandColor,
+        editWindowHours: Math.max(0, Math.round(Number(editWindowHours) || 0)),
         questions,
       });
       if (result.error) {
@@ -113,6 +117,25 @@ export function BriefSettingsForm({ brief }: { brief: Brief }) {
                 className="max-w-32"
               />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-window-hours">
+              Margen para agregar información después de enviar (horas)
+            </Label>
+            <Input
+              id="edit-window-hours"
+              type="number"
+              min={0}
+              max={720}
+              value={editWindowHours}
+              onChange={(e) => setEditWindowHours(e.target.value)}
+              className="max-w-32"
+            />
+            <p className="text-xs text-muted-foreground">
+              Durante este tiempo, si el cliente vuelve a su mismo enlace
+              podrá agregar texto o archivos que se le hayan olvidado, sin
+              rellenar el formulario de nuevo. Pon 0 para desactivarlo.
+            </p>
           </div>
         </div>
       </div>

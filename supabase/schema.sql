@@ -166,6 +166,13 @@ create table if not exists public.briefs (
   updated_at timestamptz not null default now()
 );
 
+-- Ventana de horas tras enviar una respuesta durante la cual el mismo cliente
+-- puede volver al enlace público y agregar información que se le haya
+-- olvidado, sin tener que rellenar todo el formulario de nuevo. 0 desactiva
+-- la función. El valor lo elige el dueño del brief en Configuración.
+alter table public.briefs
+  add column if not exists edit_window_hours integer not null default 24;
+
 comment on table public.briefs is 'Formulario configurado por el freelancer/agencia. questions es un snapshot editable de brief_templates.questions.';
 
 create index if not exists idx_briefs_user_id on public.briefs (user_id);
@@ -212,7 +219,8 @@ select
   questions,
   brand_color,
   brand_logo_url,
-  status
+  status,
+  edit_window_hours
 from public.briefs
 where status = 'published';
 

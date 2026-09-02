@@ -140,6 +140,7 @@ export interface Database {
           questions: BriefQuestion[];
           brand_color: string | null;
           brand_logo_url: string | null;
+          edit_window_hours: number;
           created_at: string;
           updated_at: string;
         };
@@ -376,6 +377,7 @@ export interface Database {
           brand_color: string | null;
           brand_logo_url: string | null;
           status: BriefStatus;
+          edit_window_hours: number;
         };
         Relationships: [];
       };
