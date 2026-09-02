@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { StatsSection } from "@/components/landing/stats-section";
 import { TemplatesGrid } from "@/components/landing/templates-grid";
 import { Testimonials } from "@/components/landing/testimonials";
+import { UsageGuide } from "@/components/landing/usage-guide";
 import { VoiceToProposalDemo } from "@/components/landing/voice-to-proposal-demo";
 import { getLtdSeatsRemaining } from "@/lib/ltd-seats";
 
@@ -21,6 +22,7 @@ export default async function LandingPage() {
       <main className="flex-1">
         <Hero />
         <StatsSection />
+        <UsageGuide />
         <BeforeAfter />
         <VoiceToProposalDemo />
         <AutoPricingDemo />

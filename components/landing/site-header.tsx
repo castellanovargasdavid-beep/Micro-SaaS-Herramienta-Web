@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
 
 const NAV_LINKS = [
-  { href: "#comparativa", label: "Cómo funciona" },
+  { href: "#como-funciona", label: "Cómo funciona" },
   { href: "#plantillas", label: "Plantillas" },
   { href: "#precios", label: "Precios" },
 ];
