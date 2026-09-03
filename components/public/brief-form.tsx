@@ -7,6 +7,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
+  Pencil,
   Sparkles,
   Wand2,
 } from "lucide-react";
@@ -51,6 +52,7 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [followupDraft, setFollowupDraft] = useState("");
+  const [editingField, setEditingField] = useState<string | null>(null);
   const [checkingAnswer, setCheckingAnswer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -368,45 +370,99 @@ export function BriefForm({ brief }: { brief: BriefPublic }) {
           <StepShell key="review">
             <h2 className="text-xl font-semibold">Revisa tus respuestas</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Puedes volver atrás para corregir algo antes de enviar.
+              Si algo no está bien, dale a &quot;Editar&quot; y corrígelo aquí mismo.
             </p>
             <dl className="mt-5 space-y-3 divide-y divide-border rounded-xl border border-border p-4">
-              <div className="pb-3">
-                <dt className="text-xs font-medium text-muted-foreground">
-                  Contacto
-                </dt>
-                <dd className="text-sm">
-                  {clientName} · {clientEmail}
-                </dd>
-              </div>
+              <ReviewRow
+                label="Contacto"
+                isEditing={editingField === "contact"}
+                onToggleEdit={() =>
+                  setEditingField((f) => (f === "contact" ? null : "contact"))
+                }
+                display={
+                  <>
+                    {clientName} · {clientEmail}
+                  </>
+                }
+                editor={
+                  <div className="space-y-2.5">
+                    <Input
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder="Nombre completo"
+                      autoFocus
+                    />
+                    <Input
+                      type="email"
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                    />
+                  </div>
+                }
+              />
               {questions.map((q) => (
-                <div key={q.id} className="pt-3 first:pt-0">
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    {q.label}
-                  </dt>
-                  <dd className="text-sm whitespace-pre-wrap">
-                    {answers[q.id]?.trim() || "—"}
-                  </dd>
-                </div>
+                <ReviewRow
+                  key={q.id}
+                  label={q.label}
+                  isEditing={editingField === `q-${q.id}`}
+                  onToggleEdit={() =>
+                    setEditingField((f) => (f === `q-${q.id}` ? null : `q-${q.id}`))
+                  }
+                  display={
+                    <span className="whitespace-pre-wrap">
+                      {answers[q.id]?.trim() || "—"}
+                    </span>
+                  }
+                  editor={
+                    <QuestionField
+                      question={q}
+                      value={answers[q.id] ?? ""}
+                      onChange={(value) =>
+                        setAnswers((prev) => ({ ...prev, [q.id]: value }))
+                      }
+                    />
+                  }
+                />
               ))}
-              {additionalNotes.trim() && (
-                <div className="pt-3">
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    Notas adicionales
-                  </dt>
-                  <dd className="text-sm whitespace-pre-wrap">{additionalNotes}</dd>
-                </div>
-              )}
-              {attachments.length > 0 && (
-                <div className="pt-3">
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    Adjuntos
-                  </dt>
-                  <dd className="text-sm">
-                    {attachments.length} archivo(s) adjunto(s)
-                  </dd>
-                </div>
-              )}
+              <ReviewRow
+                label="Notas adicionales"
+                isEditing={editingField === "notes"}
+                onToggleEdit={() =>
+                  setEditingField((f) => (f === "notes" ? null : "notes"))
+                }
+                display={
+                  <span className="whitespace-pre-wrap">
+                    {additionalNotes.trim() || "—"}
+                  </span>
+                }
+                editor={
+                  <Textarea
+                    value={additionalNotes}
+                    onChange={(e) => setAdditionalNotes(e.target.value)}
+                    placeholder="Cualquier detalle extra, referencia o aclaración que quieras agregar..."
+                    rows={4}
+                    autoFocus
+                  />
+                }
+              />
+              <ReviewRow
+                label="Adjuntos"
+                isEditing={editingField === "attachments"}
+                onToggleEdit={() =>
+                  setEditingField((f) =>
+                    f === "attachments" ? null : "attachments",
+                  )
+                }
+                display={
+                  attachments.length > 0
+                    ? `${attachments.length} archivo(s) adjunto(s)`
+                    : "Ninguno"
+                }
+                editor={
+                  <AttachmentsStep value={attachments} onChange={setAttachments} />
+                }
+              />
             </dl>
             {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
             <div className="mt-6 flex items-center gap-3">
@@ -491,6 +547,43 @@ function StepNav({
         Continuar
         {!loading && <ArrowRight className="size-4" />}
       </Button>
+    </div>
+  );
+}
+
+function ReviewRow({
+  label,
+  isEditing,
+  onToggleEdit,
+  display,
+  editor,
+}: {
+  label: string;
+  isEditing: boolean;
+  onToggleEdit: () => void;
+  display: React.ReactNode;
+  editor: React.ReactNode;
+}) {
+  return (
+    <div className="pt-3 first:pt-0">
+      <div className="flex items-start justify-between gap-3">
+        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+        <button
+          type="button"
+          onClick={onToggleEdit}
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
+          {isEditing ? (
+            "Listo"
+          ) : (
+            <>
+              <Pencil className="size-3" />
+              Editar
+            </>
+          )}
+        </button>
+      </div>
+      <dd className="mt-1.5 text-sm">{isEditing ? editor : display}</dd>
     </div>
   );
 }
