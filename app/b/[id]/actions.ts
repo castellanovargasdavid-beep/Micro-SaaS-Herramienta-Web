@@ -10,6 +10,10 @@ import {
 } from "@/lib/anthropic";
 import { EXTRA_NOTES_ANSWER_KEY } from "@/lib/constants";
 import { transcribeAudio } from "@/lib/openai";
+import {
+  sendNewSubmissionEmail,
+  sendSubmissionConfirmationEmail,
+} from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ATTACHMENTS_BUCKET } from "@/lib/supabase/storage";
 import { createClient } from "@/lib/supabase/server";
@@ -181,6 +185,44 @@ export async function submitBriefAction(
       .eq("id", submission.id);
   } catch (err) {
     console.error("[submitBriefAction] fallo la generación de IA:", err);
+  }
+
+  // Aviso al freelancer (a su correo de cuenta, normalmente su Gmail) + email
+  // de confirmación al cliente. Un fallo aquí (p.ej. RESEND_API_KEY sin
+  // configurar) no debe bloquear el envío del formulario del cliente.
+  try {
+    const admin = createAdminClient();
+    const { data: brief } = await admin
+      .from("briefs")
+      .select("user_id")
+      .eq("id", briefId)
+      .maybeSingle();
+
+    if (brief) {
+      const { data: owner } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("id", brief.user_id)
+        .maybeSingle();
+
+      if (owner) {
+        await sendNewSubmissionEmail({
+          to: owner.email,
+          briefId,
+          briefTitle,
+          submissionId: submission.id,
+          clientName: parsed.data.clientName,
+        });
+      }
+    }
+
+    await sendSubmissionConfirmationEmail({
+      to: parsed.data.clientEmail,
+      clientName: parsed.data.clientName,
+      briefTitle,
+    });
+  } catch (err) {
+    console.error("[submitBriefAction] fallo el envío de emails:", err);
   }
 
   (await cookies()).set(submissionCookieName(briefId), submission.id, {

@@ -98,6 +98,7 @@ export interface Database {
           notion_database_id: string | null;
           default_currency: string;
           tax_percentage: number;
+          notifications_read_at: string;
           created_at: string;
           updated_at: string;
         };

@@ -1,13 +1,18 @@
 import { MobileNav, SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { NotificationsBell } from "@/components/dashboard/notifications-bell";
 import { UserMenu } from "@/components/dashboard/user-menu";
-import { requireUser } from "@/lib/data/dashboard";
+import { getNotifications, requireUser } from "@/lib/data/dashboard";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { profile } = await requireUser();
+  const { supabase, profile } = await requireUser();
+  const { items, unreadCount } = await getNotifications(
+    supabase,
+    profile.notifications_read_at,
+  );
 
   return (
     <div className="flex min-h-screen">
@@ -21,7 +26,13 @@ export default async function DashboardLayout({
             <MobileNav />
           </div>
           <div className="hidden md:block" />
-          <UserMenu profile={profile} />
+          <div className="flex items-center gap-3">
+            <NotificationsBell
+              initialItems={items}
+              initialUnreadCount={unreadCount}
+            />
+            <UserMenu profile={profile} />
+          </div>
         </header>
 
         <main className="flex-1 bg-muted/10 p-4 sm:p-6">{children}</main>

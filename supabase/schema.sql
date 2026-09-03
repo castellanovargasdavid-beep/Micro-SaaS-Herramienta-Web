@@ -794,4 +794,13 @@ create policy "incidents_owner_delete"
   on public.incidents for delete
   using (auth.uid() = user_id);
 
+-- ============================================================================
+-- Campana de notificaciones del dashboard: marca hasta cuándo el freelancer
+-- ya revisó las respuestas nuevas de sus clientes. "No leídas" se calcula en
+-- la app como submissions.created_at > profiles.notifications_read_at, sin
+-- necesidad de una tabla aparte.
+-- ============================================================================
+alter table public.profiles
+  add column if not exists notifications_read_at timestamptz not null default now();
+
 grant select, insert, update, delete on public.incidents to authenticated;
