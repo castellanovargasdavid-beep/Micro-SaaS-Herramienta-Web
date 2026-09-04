@@ -20,6 +20,20 @@ function getResend(): Resend {
 const EMAIL_FROM = `${APP_NAME} <notificaciones@briefquick.com>`;
 
 /**
+ * El SDK de Resend NO lanza una excepción cuando el envío falla del lado de
+ * su API (dominio no verificado, from inválido, etc.) — devuelve
+ * `{ data, error }` con la petición HTTP en 200. Si no revisamos `error` a
+ * mano, un fallo real queda completamente silencioso: no rompe nada, pero
+ * tampoco se envía el correo ni queda rastro en los logs.
+ */
+async function sendEmail(payload: Parameters<Resend["emails"]["send"]>[0]) {
+  const { error } = await getResend().emails.send(payload);
+  if (error) {
+    throw new Error(`Resend rechazó el envío: ${error.name} — ${error.message}`);
+  }
+}
+
+/**
  * Aviso al dueño del brief (el freelancer) cuando un cliente termina de
  * responder — llega a su correo de la cuenta, que normalmente es su Gmail.
  * Igual que la generación del resumen con IA, un fallo aquí no debe romper
@@ -35,7 +49,7 @@ export async function sendNewSubmissionEmail(input: {
 }) {
   const url = `${APP_URL}/dashboard/briefs/${input.briefId}/submissions/${input.submissionId}`;
 
-  await getResend().emails.send({
+  await sendEmail({
     from: EMAIL_FROM,
     to: input.to,
     subject: `Nueva respuesta de ${input.clientName} en "${input.briefTitle}"`,
@@ -61,7 +75,7 @@ export async function sendSubmissionConfirmationEmail(input: {
 }) {
   const firstName = input.clientName.split(" ")[0];
 
-  await getResend().emails.send({
+  await sendEmail({
     from: EMAIL_FROM,
     to: input.to,
     subject: `Recibimos tu respuesta para "${input.briefTitle}"`,

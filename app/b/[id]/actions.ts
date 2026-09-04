@@ -188,8 +188,9 @@ export async function submitBriefAction(
   }
 
   // Aviso al freelancer (a su correo de cuenta, normalmente su Gmail) + email
-  // de confirmación al cliente. Un fallo aquí (p.ej. RESEND_API_KEY sin
-  // configurar) no debe bloquear el envío del formulario del cliente.
+  // de confirmación al cliente. Cada envío va en su propio try/catch: si uno
+  // falla (p.ej. RESEND_API_KEY sin configurar) no debe impedir el otro, y
+  // ninguno de los dos debe bloquear el envío del formulario del cliente.
   try {
     const admin = createAdminClient();
     const { data: brief } = await admin
@@ -215,14 +216,18 @@ export async function submitBriefAction(
         });
       }
     }
+  } catch (err) {
+    console.error("[submitBriefAction] fallo el email al freelancer:", err);
+  }
 
+  try {
     await sendSubmissionConfirmationEmail({
       to: parsed.data.clientEmail,
       clientName: parsed.data.clientName,
       briefTitle,
     });
   } catch (err) {
-    console.error("[submitBriefAction] fallo el envío de emails:", err);
+    console.error("[submitBriefAction] fallo el email de confirmación:", err);
   }
 
   (await cookies()).set(submissionCookieName(briefId), submission.id, {
